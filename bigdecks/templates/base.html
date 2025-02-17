@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<!-- Template the title block so each page can use it's own title. -->
+<title>{% block title %}{% endblock %} - BigDecks</title>
+<!-- TODO(Cthuloops): Add the css here -->
+<nav>
+    <h1>BigDecks</h1>
+    <ul> <!-- TODO(Cthuloops): Add links to the pages. -->
+        <!-- <li><a href="{{ url_for('PATH') }}">Link Name</a> -->
+        {% if g.user %}
+        <li><span>{{ g.user['username'] }}</span></li>
+        <li><a href="{{ url_for('auth.logout') }}">Log Out</a></li>
+        {% else %}
+        <li><a href="{{ url_for('auth.register') }}">Register</a></li>
+        <li><a href="{{ url_for('auth.login') }}">Log In</a></li>
+        {% endif %}
+    </ul>
+</nav>
+<section class="content">
+    <header>
+        <!-- Allow each page to add their own header. -->
+        {% block header %}{% endblock %}
+    </header>
+    <!-- Each page can override this with their content. -->
+    {% block content %}{% endblock %}
+</section>
