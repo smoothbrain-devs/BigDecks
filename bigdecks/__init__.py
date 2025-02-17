@@ -53,13 +53,14 @@ def create_app(test_configuration=None):
     except OSError as e:
         print(f"{e}")
 
-    @app.route("/")
-    def index():
-        return "Hello, World!"
-
 
     # TODO(Cthuloops): We need to add the app.routes here as blueprints
     # https://flask.palletsprojects.com/en/stable/tutorial/views/
+
+    # Add the index to the app.
+    from . import home
+    app.register_blueprint(home.bp)
+    app.add_url_rule("/", endpoint="index")
 
 
     return app
