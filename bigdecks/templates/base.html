@@ -5,14 +5,6 @@
 <nav>
     <h1>BigDecks</h1>
     <ul> <!-- TODO(Cthuloops): Add links to the pages. -->
-        <!-- <li><a href="{{ url_for('PATH') }}">Link Name</a> -->
-        {% if g.user %}
-        <li><span>{{ g.user['username'] }}</span></li>
-        <li><a href="{{ url_for('auth.logout') }}">Log Out</a></li>
-        {% else %}
-        <li><a href="{{ url_for('auth.register') }}">Register</a></li>
-        <li><a href="{{ url_for('auth.login') }}">Log In</a></li>
-        {% endif %}
     </ul>
 </nav>
 <section class="content">
