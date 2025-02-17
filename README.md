@@ -1,7 +1,7 @@
 # BigDecks
 A Magic: the Gathering game store page.
 
-## How to use (Linux instructions)
+## How to use
 1. Create a virtual environment: `python3 -m venv .venv`
 2. Enter the environment: `source .venv/bin/activate`
 3. Install requirements: `pip install -r requirements.txt`
