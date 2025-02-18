@@ -9,6 +9,7 @@ override the default configuration for testing purposes.
 """
 
 
+from datetime import datetime
 import os
 from flask import Flask
 
@@ -53,6 +54,12 @@ def create_app(test_configuration=None):
     except OSError as e:
         print(f"{e}")
 
+
+    # Create a context for the app
+    @app.context_processor
+    def inject_year():
+        """Make the current year available to all templates"""
+        return {'year': datetime.now().year}
 
     # TODO(Cthuloops): We need to add the app.routes here as blueprints
     # https://flask.palletsprojects.com/en/stable/tutorial/views/
