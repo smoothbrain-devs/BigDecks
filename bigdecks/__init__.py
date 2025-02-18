@@ -61,6 +61,7 @@ def create_app(test_configuration=None):
         """Make the current year available to all templates"""
         return {'year': datetime.now().year}
 
+      
     # TODO(Cthuloops): We need to add the app.routes here as blueprints
     # https://flask.palletsprojects.com/en/stable/tutorial/views/
 
