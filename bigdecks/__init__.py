@@ -47,10 +47,7 @@ def create_app(test_configuration=None):
 
     # Ensure the instance folder exists.
     try:
-        os.makedirs(app.instance_path)
-    except FileExistsError:
-        # We don't care if the file already exists because we want it to exist.
-        pass
+        os.makedirs(app.instance_path, exist_ok=True)
     except OSError as e:
         print(f"{e}")
 
