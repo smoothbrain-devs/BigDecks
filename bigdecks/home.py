@@ -8,6 +8,7 @@ from flask import (
     Blueprint, render_template
 )
 
+
 # Create the blueprint for the index page at /index
 bp = Blueprint(name="home", import_name="__name__")
 
