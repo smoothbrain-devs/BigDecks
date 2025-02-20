@@ -5,7 +5,7 @@ from flask import (
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from .database import get_db
+from .database import get_db_connection
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -14,7 +14,7 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        db = get_db("users")
+        db = get_db_connection("users")
         error = None
 
         if not username:
@@ -32,6 +32,7 @@ def register():
             except db.IntegrityError:
                 error = f"User {username} is already registered."
             else:
+                # create unique user db
                 return redirect(url_for("auth.login"))
 
         flash(error)
@@ -43,7 +44,7 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        db = get_db("users")
+        db = get_db_connection("users")
         error = None
         user = db.execute(
             'SELECT * FROM user WHERE username = ?', (username,)
@@ -70,7 +71,7 @@ def load_logged_in_user():
     if user_id is None:
         g.user = None
     else:
-        g.user = get_db("users").execute(
+        g.user = get_db_connection("users").execute(
             'SELECT * FROM user WHERE id = ?', (user_id,)
         ).fetchone()
 

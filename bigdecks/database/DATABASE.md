@@ -2,5 +2,3 @@
 instance
     users.db
     cards.db
-    user_data/
-        user{n}.db
