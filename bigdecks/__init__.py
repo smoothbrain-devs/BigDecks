@@ -67,5 +67,10 @@ def create_app(test_configuration=None):
     app.register_blueprint(home.bp)
     app.add_url_rule("/", endpoint="index")
 
+    from . import userdb
+    userdb.init_app(app)
+
+    from . import auth
+    app.register_blueprint(auth.bp)
 
     return app
