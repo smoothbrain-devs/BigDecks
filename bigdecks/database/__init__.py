@@ -23,7 +23,6 @@ def init_app(app: Flask):
     app.teardown_appcontext(close_connections)
 
 
-
 def get_db_connection(db_name: str):
     """Get a database connection, creating it if it doesn"t exist already.
 
