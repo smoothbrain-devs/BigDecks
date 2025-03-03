@@ -172,6 +172,3 @@ cython_debug/
 
 # Default card list scryfall
 default_cards.json
-
-# My tests
-tests.py
