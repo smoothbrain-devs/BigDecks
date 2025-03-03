@@ -34,8 +34,6 @@ def create_app(test_configuration=None):
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(
         SECRET_KEY='dev', # TODO(Cthuloops): obviously we should change this for production.
-        # TODO(Cthuloops): We need to put the actual DB path here.
-        DATABASE=os.path.join(app.instance_path, 'bigdecks.sqlite')
     )
 
     if test_configuration is None:
@@ -68,6 +66,9 @@ def create_app(test_configuration=None):
     app.add_url_rule("/", endpoint="index")
 
     from .database import init_app 
-    init_app(app)
+    try:
+        init_app(app)
+    except Exception as e:
+        print(f"{e}")
 
     return app
