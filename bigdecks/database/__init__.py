@@ -1,15 +1,25 @@
 """Database initialization and connection functions"""
 
 
+import click
 import os
 import sqlite3
+from datetime import datetime
 from flask import Flask, g, current_app
+
+
+sqlite3.register_converter(
+    "timestamp", lambda v: datetime.fromisoformat(v.decode())
+)
 
 
 def init_app(app: Flask):
     """Initialize database handling for the Flask application.
 
-    This should be called when setting up the app.
+    This function:
+    1. Creates the necessary directories.
+    2. Sets up the cards and users databases.
+    3. Registers connnection cleanup.
 
     Parameters
     ----------
@@ -19,11 +29,35 @@ def init_app(app: Flask):
     with app.app_context():
         os.makedirs(os.path.join(app.instance_path, "user_data"), exist_ok=True)
 
+    # Create the users and cards databases
+    with app.app_context():
+        for db in ["users", "cards"]:
+            init_db(db)
+
     # Register the teardown function to close database connections
     app.teardown_appcontext(close_connections)
 
 
-def get_db_connection(db_name: str):
+def init_db(db_name: str):
+    """Create and initialize the named database.
+
+    Parameters
+    ----------
+    db_name: str
+        Name of the database to initialize.
+    """
+    db_path = _get_db_path(db_name)
+    db_exists = os.path.exists(db_path)
+
+    if not db_exists:
+        click.echo(f"Creating the {db_name} database")
+        schema_path = os.path.join("database", f"{db_name}_schema.sql")
+        conn = get_db_connection(db_name)
+        with current_app.open_resource(schema_path) as f:
+            conn.executescript(f.read().decode("utf8"))
+
+
+def get_db_connection(db_name: str) -> sqlite3.Connection:
     """Get a database connection, creating it if it doesn"t exist already.
 
     Parameters
@@ -77,6 +111,4 @@ def _get_db_path(db_name: str) -> str:
     instance_path = current_app.instance_path
     if db_name in ["cards", "users"]:
         db_path = os.path.join(instance_path, f"{db_name}.db")
-    else:
-        db_path = os.path.join(instance_path, "user_data", f"{db_name}.db")
     return db_path

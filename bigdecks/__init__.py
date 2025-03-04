@@ -67,5 +67,10 @@ def create_app(test_configuration=None):
     app.register_blueprint(home.bp)
     app.add_url_rule("/", endpoint="index")
 
+    from . import auth
+    app.register_blueprint(auth.bp)
+
+    from .database import init_app
+    init_app(app)
 
     return app
