@@ -34,8 +34,6 @@ def create_app(test_configuration=None):
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(
         SECRET_KEY='dev', # TODO(Cthuloops): obviously we should change this for production.
-        # TODO(Cthuloops): We need to put the actual DB path here.
-        DATABASE=os.path.join(app.instance_path, 'bigdecks.sqlite')
     )
 
     if test_configuration is None:
@@ -67,10 +65,18 @@ def create_app(test_configuration=None):
     app.register_blueprint(home.bp)
     app.add_url_rule("/", endpoint="index")
 
+
     from . import auth
     app.register_blueprint(auth.bp)
 
-    from .database import init_app
-    init_app(app)
+
+    from . import cards
+    app.register_blueprint(cards.bp)
+
+    from .database import init_app 
+    try:
+        init_app(app)
+    except Exception as e:
+        print(f"{e}")
 
     return app

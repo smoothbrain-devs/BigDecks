@@ -24,10 +24,12 @@ def init_app(app: Flask):
     Parameters
     ----------
     app: Flask
+        The Flask app instance.
     """
-    # Ensure the directory for user databases exists.
+    # Create the users and cards databases
     with app.app_context():
-        os.makedirs(os.path.join(app.instance_path, "user_data"), exist_ok=True)
+        for db in ["users", "cards"]:
+            init_db(db)
 
     # Create the users and cards databases
     with app.app_context():
@@ -38,27 +40,44 @@ def init_app(app: Flask):
     app.teardown_appcontext(close_connections)
 
 
-def init_db(db_name: str):
+def init_db(db_name: str) -> None:
     """Create and initialize the named database.
 
     Parameters
     ----------
     db_name: str
         Name of the database to initialize.
+
+    Exceptions
+    ----------
+    FileNotFoundError
+        Raises if the db or the db schema do not exist.
     """
     db_path = _get_db_path(db_name)
     db_exists = os.path.exists(db_path)
+    schema_path = None
 
     if not db_exists:
         click.echo(f"Creating the {db_name} database")
-        schema_path = os.path.join("database", f"{db_name}_schema.sql")
+        if db_name in ["users", "cards"]:
+            schema_path = os.path.join("database", f"{db_name}_schema.sql")
         conn = get_db_connection(db_name)
-        with current_app.open_resource(schema_path) as f:
-            conn.executescript(f.read().decode("utf8"))
+
+        if schema_path is not None:
+            with current_app.open_resource(schema_path) as f:
+                try:
+                    conn.executescript(f.read().decode("utf8"))
+                except Exception as e:
+                    print(f"Error occurred in {db_name}_schema.sql:")
+                    print("\t", e)
+        else:
+            raise FileNotFoundError(f"{schema_path} does not exist")
+    else:
+        raise FileNotFoundError(f"{db_name} does not exist.")
 
 
 def get_db_connection(db_name: str) -> sqlite3.Connection:
-    """Get a database connection, creating it if it doesn"t exist already.
+    """Get a database connection, creating it if it doesn't exist already.
 
     Parameters
     ----------
@@ -109,6 +128,5 @@ def _get_db_path(db_name: str) -> str:
         Path to the requested database.
     """
     instance_path = current_app.instance_path
-    if db_name in ["cards", "users"]:
-        db_path = os.path.join(instance_path, f"{db_name}.db")
+    db_path = os.path.join(instance_path, f"{db_name}.db")
     return db_path
