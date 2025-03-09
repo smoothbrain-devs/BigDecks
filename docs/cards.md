@@ -33,9 +33,6 @@
 
 # Cards
 
-We're using the default cards bulk data from Scryfall which contains every card object on Scryfall in English or the printed language if the card is only avaialable in one language.
-On top of that, we're cutting down on the information by only including the English cards.
-
 ## Strategy
 - Get the bulk-data/default-cards json file from api.scryfall.com/bulk-data/default-cards.
     - This gets us the *.scryfall.io URI for the default-cards json file, which means we can avoid worrying about rate limiting.
@@ -44,6 +41,4 @@ On top of that, we're cutting down on the information by only including the Engl
 - Update every 24 hours or so.
 
 ## Cards DB
-I don't think that we need to record all of the information that Scryfall offers. We just need the things that give us good search capabilities and price information.
-We're also only getting the english print cards so that cuts the information that we need to store.
-
+We're using a subset of the overall information from the Scryfall API, we can always extend to the full amount if necessary.
