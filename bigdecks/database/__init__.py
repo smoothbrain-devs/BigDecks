@@ -60,7 +60,11 @@ def init_db(db_name: str) -> None:
 
         if schema_path is not None:
             with current_app.open_resource(schema_path) as f:
-                conn.executescript(f.read().decode("utf8"))
+                try:
+                    conn.executescript(f.read().decode("utf8"))
+                except Exception as e:
+                    print(f"Error occurred in {db_name}_schema.sql:")
+                    print("\t", e)
         else:
             raise FileNotFoundError(f"{schema_path} does not exist")
     else:
@@ -68,7 +72,7 @@ def init_db(db_name: str) -> None:
 
 
 def get_db_connection(db_name: str) -> sqlite3.Connection:
-    """Get a database connection, creating it if it doesn"t exist already.
+    """Get a database connection, creating it if it doesn't exist already.
 
     Parameters
     ----------

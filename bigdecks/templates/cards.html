@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block header %}
+    <h1>{% block title %}Cards{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+<div class="card-container">
+    <article class="card">
+        <header class="card-header">
+            <h2>{{ card['name'] }}</h2>
+        </header>
+        <div class="card-body">
+            {# Display only the attributes we want to show, excluding 'name' which is already in the header #}
+            <img src={{ card['normal'] }} alt={{ card['name'] }} style="width:200px;height:300px>
+            {% for key, value in card.items() %}
+                {% if key != 'name' and key != 'id' %}  {# Skip internal attributes like 'id' #}
+                    <div class="attribute-row">
+                        <span class="attribute-key">{{ key|title }}</span>
+                        <span class="attribute-value">{{ value }}</span>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </article>
+</div>
+{% endblock %}
