@@ -49,34 +49,33 @@ def create_app(test_configuration=None):
     except OSError as e:
         print(f"{e}")
 
-
     # Create a context for the app
     @app.context_processor
     def inject_year():
         """Make the current year available to all templates"""
         return {'year': datetime.now().year}
 
-      
     # TODO(Cthuloops): We need to add the app.routes here as blueprints
     # https://flask.palletsprojects.com/en/stable/tutorial/views/
 
-    # Add the index to the app.
-    from . import home
-    app.register_blueprint(home.bp)
-    app.add_url_rule("/", endpoint="index")
+    from .database import init_app
+    init_app(app)
 
-
-    from . import auth
+    from . import auth, cards, home
     app.register_blueprint(auth.bp)
-
-
-    from . import cards
     app.register_blueprint(cards.bp)
+    app.register_blueprint(home.bp)
 
-    from .database import init_app 
-    try:
-        init_app(app)
-    except Exception as e:
-        print(f"{e}")
+    if app.config.get("FLASK_CLI_MODE", False):
+        init_cards(app)
 
     return app
+
+
+def init_cards(app):
+    """Initialize and populate the cards database."""
+    from .cards import CardsManager
+
+    with app.app_context():
+        with CardsManager() as manager:
+            manager.populate_card_database()

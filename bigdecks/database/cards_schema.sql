@@ -54,6 +54,9 @@ CREATE TABLE IF NOT EXISTS core (
     reserved BOOLEAN NOT NULL,
     toughness TEXT,
     type_line TEXT NOT NULL,
+    supertype TEXT, -- JSON Array of strings. (May only be 1)
+    cardtype TEXT, -- JSON Array of strings. (May only be 1)
+    subtype TEXT,  -- JSON Array of strings. (May only be 1)
     artist TEXT,
     artist_ids TEXT,  -- JSON Array of strings.
     attraction_lights TEXT,  -- JSON Array of strings.
@@ -130,6 +133,9 @@ CREATE TABLE IF NOT EXISTS all_parts (
     component TEXT NOT NULL,  -- What role this card plays in the relationship (e.g. token)
     name TEXT NOT NULL,
     type_line TEXT NOT NULL,
+    supertype TEXT, -- JSON Array of strings. (May only be 1)
+    cardtype TEXT, -- JSON Array of strings. (May only be 1)
+    subtype TEXT, -- JSON Array of strings. (May only be 1)
     uri TEXT NOT NULL,  -- URI for card object
     FOREIGN KEY(core_id) REFERENCES core(scryfall_id)
 );
@@ -165,6 +171,9 @@ CREATE TABLE IF NOT EXISTS card_faces (
     printed_type_line TEXT,  -- Localized type line
     toughness TEXT,
     type_line TEXT,
+    supertype TEXT, -- JSON Array of strings. (May only be 1)
+    cardtype TEXT, -- JSON Array of strings. (May only be 1)
+    subtype TEXT, -- JSON Array of strings. (May only be 1)
     watermark TEXT,
     FOREIGN KEY(core_id) REFERENCES core(scryfall_id)
 );

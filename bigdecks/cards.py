@@ -1,9 +1,9 @@
 """Cards DB maintenance functions and CardsManager class"""
 
-
 import click
 import json
 import os
+import re
 import requests
 import sqlite3
 from datetime import datetime, timezone, timedelta
@@ -12,8 +12,7 @@ from flask.cli import with_appcontext
 from requests.exceptions import HTTPError, Timeout
 from .database import get_db_connection
 
-
-bp = Blueprint(name="cards", import_name="__name__")
+bp = Blueprint(name="cards", import_name=__name__)
 
 
 @bp.route("/cards")
@@ -29,10 +28,19 @@ def home():
 
 
 @bp.cli.command("populate")
+@click.option("-r", "--rebuild", is_flag=True,
+              help="Rebuild the database from scratch")
+@click.option("-f", "--force", is_flag=True,
+              help="Force repopulation of database")
 @with_appcontext
-def populate_cards_command():
+def populate_cards_command(rebuild=False, force=False):
     """Populate the cards db from the Scryfall JSON file."""
+    updated = False
     with CardsManager() as manager:
+        if rebuild:
+            click.echo("Rebuilding the cards database.")
+            return
+
         if not manager._bulk_data_up_to_date() or \
            not os.path.exists(manager._get_default_cards_path()):
             click.echo("Donloading the latest card data.")
@@ -40,9 +48,11 @@ def populate_cards_command():
             if not success:
                 click.echo("Failed to download card data.", err=True)
                 return
+            updated = True
 
-        click.echo("Populating database...")
-        success = manager.populate_card_database()
+        if updated or force:
+            click.echo("Populating database...")
+            success = manager.populate_card_database()
 
         success = True
         if success:
@@ -333,126 +343,130 @@ class CardsManager:
         
         # Create the parameter tuple
         params = (
-            card.get('id'),                           # scryfall_id
-            card.get('arena_id'),                     # arena_id
-            card.get('mtgo_id'),                      # mtgo_id
-            card.get('mtgo_foil_id'),                 # mtgo_foil_id
-            multiverse_ids,                           # multiverse_ids
-            card.get('layout'),                       # layout
-            card.get('oracle_id'),                    # oracle_id
-            card.get('rulings_uri'),                  # rulings_uri
-            card.get('scryfall_uri'),                 # scryfall_uri
-            card.get('uri'),                          # uri
-            has_all_parts,                            # all_parts
-            has_card_faces,                           # card_faces
-            card.get('cmc', 0.0),                     # cmc
-            color_identity,                           # color_identity
-            color_indicator,                          # color_indicator
-            colors,                                   # colors
-            card.get('defense'),                      # defense
-            card.get('game_changer', False),          # game_changer
-            card.get('hand_modifier'),                # hand_modifier
-            keywords,                                 # keywords
+            card.get("id"),
+            card.get("arena_id"),
+            card.get("mtgo_id"),
+            card.get("mtgo_foil_id"),
+            multiverse_ids,
+            card.get("layout"),
+            card.get("oracle_id"),
+            card.get("rulings_uri"),
+            card.get("scryfall_uri"),
+            card.get("uri"),
+            has_all_parts,
+            has_card_faces,
+            card.get("cmc", 0.0),
+            color_identity,
+            color_indicator,
+            colors,
+            card.get("defense"),
+            card.get("game_changer", False),
+            card.get("hand_modifier"),
+            keywords,
             # Legalities
-            legalities.get('standard', 'not_legal'),  # standard
-            legalities.get('future', 'not_legal'),    # future
-            legalities.get('historic', 'not_legal'),  # historic
-            legalities.get('timeless', 'not_legal'),  # timeless
-            legalities.get('gladiator', 'not_legal'), # gladiator
-            legalities.get('pioneer', 'not_legal'),   # pioneer
-            legalities.get('explorer', 'not_legal'),  # explorer
-            legalities.get('modern', 'not_legal'),    # modern
-            legalities.get('legacy', 'not_legal'),    # legacy
-            legalities.get('pauper', 'not_legal'),    # pauper
-            legalities.get('vintage', 'not_legal'),   # vintage
-            legalities.get('penny', 'not_legal'),     # penny
-            legalities.get('commander', 'not_legal'), # commander
-            legalities.get('oathbreaker', 'not_legal'), # oathbreaker
-            legalities.get('standardbrawl', 'not_legal'), # standardbrawl
-            legalities.get('brawl', 'not_legal'),     # brawl
-            legalities.get('alchemy', 'not_legal'),   # alchemy
-            legalities.get('paupercommander', 'not_legal'), # paupercommander
-            legalities.get('duel', 'not_legal'),      # duel
-            legalities.get('oldschool', 'not_legal'), # oldschool
-            legalities.get('premodern', 'not_legal'), # premodern
-            legalities.get('predh', 'not_legal'),     # predh
-            card.get('life_modifier'),                # life_modifier
-            card.get('loyalty'),                      # loyalty
-            card.get('mana_cost'),                    # mana_cost
-            card.get('name'),                         # name
-            card.get('oracle_text'),                  # oracle_text
-            card.get('power'),                        # power
-            produced_mana,                            # produced_mana
-            card.get('reserved', False),              # reserved
-            card.get('toughness'),                    # toughness
-            card.get('type_line'),                    # type_line
-            card.get('artist'),                       # artist
-            artist_ids,                               # artist_ids
-            attraction_lights,                        # attraction_lights
-            card.get('booster', False),               # booster
-            card.get('border_color'),                 # border_color
-            card.get('card_back_id', ''),             # card_back_id
-            card.get('collector_number'),             # collector_number
-            card.get('content_warning', False),       # content_warning
-            card.get('digital', False),               # digital
+            legalities.get("standard", "not_legal"),
+            legalities.get("future", "not_legal"),
+            legalities.get("historic", "not_legal"),
+            legalities.get("timeless", "not_legal"),
+            legalities.get("gladiator", "not_legal"),
+            legalities.get("pioneer", "not_legal"),
+            legalities.get("explorer", "not_legal"),
+            legalities.get("modern", "not_legal"),
+            legalities.get("legacy", "not_legal"),
+            legalities.get("pauper", "not_legal"),
+            legalities.get("vintage", "not_legal"),
+            legalities.get("penny", "not_legal"),
+            legalities.get("commander", "not_legal"),
+            legalities.get("oathbreaker", "not_legal"),
+            legalities.get("standardbrawl", "not_legal"),
+            legalities.get("brawl", "not_legal"),
+            legalities.get("alchemy", "not_legal"),
+            legalities.get("paupercommander", "not_legal"),
+            legalities.get("duel", "not_legal"),
+            legalities.get("oldschool", "not_legal"),
+            legalities.get("premodern", "not_legal"),
+            legalities.get("predh", "not_legal"),
+            card.get("life_modifier"),
+            card.get("loyalty"),
+            card.get("mana_cost"),
+            card.get("name"),
+            card.get("oracle_text"),
+            card.get("power"),
+            produced_mana,
+            card.get("reserved", False),
+            card.get("toughness"),
+            card.get("type_line"),
+            card.get("supertype"),
+            card.get("cardtype"),
+            card.get("subtype"),
+            card.get("artist"),
+            artist_ids,
+            attraction_lights,
+            card.get("booster", False),
+            card.get("border_color"),
+            card.get("card_back_id", ""),
+            card.get("collector_number"),
+            card.get("content_warning", False),
+            card.get("digital", False),
             # Finishes
-            has_foil,                                 # foil
-            has_nonfoil,                              # nonfoil
-            has_etched,                               # etched
-            card.get('flavor_name'),                  # flavor_name
-            card.get('flavor_text'),                  # flavor_text
-            frame_effects,                            # frame_effects
-            card.get('frame'),                        # frame
-            card.get('full_art', False),              # full_art
+            has_foil,
+            has_nonfoil,
+            has_etched,
+            card.get("flavor_name"),
+            card.get("flavor_text"),
+            frame_effects,
+            card.get("frame"),
+            card.get("full_art", False),
             # Games availability
-            in_paper,                                 # paper
-            in_arena,                                 # arena
-            in_mtgo,                                  # mtgo
-            card.get('highres_image', False),         # highres_image
-            card.get('illustration_id'),              # illustration_id
-            card.get('image_status'),                 # image_status
+            in_paper,
+            in_arena,
+            in_mtgo,
+            card.get("highres_image", False),
+            card.get("illustration_id"),
+            card.get("image_status"),
             # Image URIs
-            image_uris.get('png'),                    # png
-            image_uris.get('border_crop'),            # border_crop
-            image_uris.get('art_crop'),               # art_crop
-            image_uris.get('large'),                  # large
-            image_uris.get('normal'),                 # normal
-            image_uris.get('small'),                  # small
-            card.get('oversized', False),             # oversized
+            image_uris.get("png"),
+            image_uris.get("border_crop"),
+            image_uris.get("art_crop"),
+            image_uris.get("large"),
+            image_uris.get("normal"),
+            image_uris.get("small"),
+            card.get("oversized", False),
             # Prices
-            prices.get('usd'),                        # price_usd
-            prices.get('usd_foil'),                   # price_usd_foil
-            prices.get('usd_etched'),                 # price_usd_etched
-            prices.get('eur'),                        # price_eur
-            prices.get('eur_foil'),                   # price_eur_foil
-            prices.get('eur_etched'),                 # price_eur_etched
-            prices.get('tix'),                        # price_tix
-            card.get('printed_name'),                 # printed_name
-            card.get('printed_text'),                 # printed_text
-            card.get('printed_type_line'),            # printed_type_line
-            card.get('promo', False),                 # promo
-            promo_types,                              # promo_types
-            card.get('rarity'),                       # rarity
-            card.get('released_at'),                  # released_at
-            card.get('reprint', False),               # reprint
-            card.get('scryfall_set_uri'),             # scryfall_set_uri
-            card.get('set_name'),                     # set_name
-            card.get('set_search_uri'),               # set_search_uri
-            card.get('set_type'),                     # set_type
-            card.get('set_uri'),                      # set_uri
-            card.get('set'),                          # set_code
-            card.get('set_id'),                       # set_id
-            card.get('story_spotlight', False),       # story_spotlight
-            card.get('textless', False),              # textless
-            card.get('variation', False),             # variation
-            card.get('variation_of'),                 # variation_of
-            card.get('security_stamp'),               # security_stamp
-            card.get('watermark')                     # watermark
+            prices.get("usd"),
+            prices.get("usd_foil"),
+            prices.get("usd_etched"),
+            prices.get("eur"),
+            prices.get("eur_foil"),
+            prices.get("eur_etched"),
+            prices.get("tix"),
+            card.get("printed_name"),
+            card.get("printed_text"),
+            card.get("printed_type_line"),
+            card.get("promo", False),
+            promo_types,
+            card.get("rarity"),
+            card.get("released_at"),
+            card.get("reprint", False),
+            card.get("scryfall_set_uri"),
+            card.get("set_name"),
+            card.get("set_search_uri"),
+            card.get("set_type"),
+            card.get("set_uri"),
+            card.get("set"),
+            card.get("set_id"),
+            card.get("story_spotlight", False),
+            card.get("textless", False),
+            card.get("variation", False),
+            card.get("variation_of"),
+            card.get("security_stamp"),
+            card.get("watermark")
         )
         
         # Create the SQL query
         query = """
         INSERT OR REPLACE INTO core (
+<<<<<<< HEAD
             scryfall_id, arena_id, mtgo_id, mtgo_foil_id, multiverse_ids, 
             layout, oracle_id, rulings_uri, scryfall_uri, uri, 
             all_parts, card_faces, cmc, color_identity, color_indicator, 
@@ -475,13 +489,37 @@ class CardsManager:
             released_at, reprint, scryfall_set_uri, set_name, set_search_uri, 
             set_type, set_uri, set_code, set_id, story_spotlight, 
             textless, variation, variation_of, security_stamp, watermark
+=======
+            scryfall_id, arena_id, mtgo_id, mtgo_foil_id, multiverse_ids,
+            layout, oracle_id, rulings_uri, scryfall_uri, uri,
+            all_parts, card_faces, cmc, color_identity, color_indicator,
+            colors, defense, game_changer, hand_modifier, keywords,
+            standard, future, historic, timeless, gladiator,
+            pioneer, explorer, modern, legacy, pauper,
+            vintage, penny, commander, oathbreaker, standardbrawl,
+            brawl, alchemy, paupercommander, duel, oldschool,
+            premodern, predh, life_modifier, loyalty, mana_cost,
+            name, oracle_text, power, produced_mana, reserved,
+            toughness, type_line, supertype, cardtype, subtype, artist,
+            artist_ids, attraction_lights, booster, border_color, card_back_id,
+            collector_number, content_warning, digital, foil, nonfoil, etched,
+            flavor_name, flavor_text, frame_effects, frame, full_art, paper,
+            arena, mtgo, highres_image, illustration_id, image_status, png,
+            border_crop, art_crop, large, normal, small, oversized, price_usd,
+            price_usd_foil, price_usd_etched, price_eur, price_eur_foil,
+            price_eur_etched, price_tix, printed_name, printed_text,
+            printed_type_line, promo, promo_types, rarity, released_at,
+            reprint, scryfall_set_uri, set_name, set_search_uri, set_type,
+            set_uri, set_code, set_id, story_spotlight, textless, variation,
+            variation_of, security_stamp, watermark
+>>>>>>> b305ead (feat(database.cards): update cards cli and init database on flask start)
         ) VALUES (
             ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
             ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
             ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
             ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 
             ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
         )
         """
         
@@ -509,13 +547,17 @@ class CardsManager:
                 part.get("component"),
                 part.get("name"),
                 part.get("type_line"),
+                part.get("supertype"),
+                part.get("cardtype"),
+                part.get("subtype"),
                 part.get("uri")
             )
 
         query = """
         INSERT OR REPLACE INTO all_parts (
-            core_id, scryfall_id, component, name, type_line, uri
-        ) VALUES (?, ?, ?, ?, ?, ?)
+            core_id, scryfall_id, component, name, type_line, supertype,
+            cardtype, subtype, uri
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
 
         if params is not None:
@@ -578,6 +620,9 @@ class CardsManager:
                 face.get("printed_type_line"),
                 face.get("toughness"),
                 face.get("type_line"),
+                face.get("supertype"),
+                face.get("cardtype"),
+                face.get("subtype"),
                 face.get("watermark")
             )
 
@@ -587,10 +632,11 @@ class CardsManager:
                 flavor_text, illustration_id, png, border_crop, art_crop,
                 large, normal, small, layout, loyalty, mana_cost, name,
                 oracle_id, oracle_text, power, printed_name, printed_text,
-                printed_type_line, toughness, type_line, watermark
+                printed_type_line, toughness, type_line, supertype, cardtype,
+                subtype, watermark
             ) VALUES (
                 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?, ?
+                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
             )
             """
 
@@ -632,6 +678,20 @@ class CardsManager:
                 # Go through all the cards
                 for card in ijson.items(f, "item", use_float=True):
                     cards_processed += 1
+
+                    # The core data for a reversible_card doesn't contain the
+                    # type_line, but since both faces are the same card,
+                    # just grab the type_line from one and put it as the core
+                    # type_line
+                    if card.get("layout") == "reversible_card":
+                        face = card.get("card_faces")
+                        card["type_line"] = face[0].get("type_line")
+
+                    types = ["supertype", "cardtype", "subtype"]
+                    card_types = _get_card_types(card.get("type_line"))
+                    for t in types:
+                        if t in card_types:
+                            card[t] = card_types.get(t)
 
                     try:
                         # Insert core data
@@ -679,6 +739,42 @@ class CardsManager:
                 conn.rollback()
             return False
 
+
+def _get_card_types(typeline: str) -> dict[str, str]:
+    """Split the typeline and return the super/main/sub types for a card.
+
+    Parameters
+    ----------
+    type_line: str
+        Type line for a card
+
+    Returns
+    -------
+    dict[str, str]
+        If a key is present in the dictionary, the value will be a stringified
+        json array with 1 or more values.
+        Possible keys: "supertype", "subtype"
+        Guaranteed key: "cardtype"
+    """
+    supertypes = ["Basic", "Elite", "Legendary", "Ongoing", "Snow",
+                  "Token", "World"]
+    cardtypes = ["Artifact", "Battle", "Conspiracy", "Creature", "Dungeon",
+                 "Emblem", "Enchantment", "Hero", "Instant", "Kindred",
+                 "Tribal", "Land", "Phenomenom", "Plane", "Planeswalker",
+                 "Scheme", "Sorcery", "Vanguard"]
+
+    card_types: dict[str, str] = {}
+    types: set[str] = set()
+    # Split the typeline, use a set to remove potential duplicates.
+    types = set(re.split(r" — | \/\/ | ", typeline))
+    card_types["supertype"] = json.dumps([st for st in types
+                                          if st in supertypes])
+    card_types["cardtype"] = json.dumps([mt for mt in types
+                                         if mt in cardtypes])
+    card_types["subtype"] = json.dumps([t for t in types if
+                                        t not in supertypes and
+                                        t not in cardtypes])
+    return card_types
 
 
 def update_default_cards_json() -> bool:
