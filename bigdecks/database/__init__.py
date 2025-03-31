@@ -26,14 +26,16 @@ def init_app(app: Flask):
     app: Flask
         The Flask app instance.
     """
+    database_path = os.path.join(app.instance_path, "database")
     try:
-        os.makedirs(os.path.join(app.instance_path, "database"), exist_ok=True)
+        os.makedirs(os.path.join(database_path), exist_ok=True)
     except OSError as e:
         click.echo(f"Could not create database directory: {e}")
 
     # Create the users and cards databases
+    dbs = ["users", "cards"]
     with app.app_context():
-        for db in ["users", "cards"]:
+        for db in dbs:
             init_db(db)
 
     # Register the teardown function to close database connections
@@ -75,8 +77,6 @@ def init_db(db_name: str) -> None:
         else:
             raise FileNotFoundError(f"{schema_path} does not exist")
         conn.commit()
-    else:
-        click.echo(f"Database {db_name} already exists.")
 
 
 def get_db_connection(db_name: str) -> sqlite3.Connection:

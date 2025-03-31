@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS core (
     name NOT NULL,
     oracle_text TEXT,
     power TEXT,
-    produced_mana TEXT, JSON Colors array,
+    produced_mana TEXT, -- JSON Colors array,
     reserved BOOLEAN NOT NULL,
     toughness TEXT,
     type_line TEXT NOT NULL,

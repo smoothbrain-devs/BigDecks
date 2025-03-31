@@ -43,7 +43,7 @@ def create_app(test_configuration=None):
         # Load the test configuration if it was passed in.
         app.config.from_mapping(test_configuration)
 
-    # Ensure the instance folder exists.
+    # Ensure the instance directory
     try:
         os.makedirs(app.instance_path, exist_ok=True)
     except OSError as e:
@@ -58,24 +58,17 @@ def create_app(test_configuration=None):
     # TODO(Cthuloops): We need to add the app.routes here as blueprints
     # https://flask.palletsprojects.com/en/stable/tutorial/views/
 
-    from .database import init_app
-    init_app(app)
+    # Initialize the database
+    from .database import init_app as init_db_app
+    init_db_app(app)
 
-    from . import auth, cards, home
+    # Register cards cli commands
+    from .database.cards_db import init_app as init_cards_db_app
+    init_cards_db_app(app)
+
+    from . import auth, home
     app.register_blueprint(auth.bp)
-    app.register_blueprint(cards.bp)
+    # app.register_blueprint(cards.bp)
     app.register_blueprint(home.bp)
 
-    if app.config.get("FLASK_CLI_MODE", False):
-        init_cards(app)
-
     return app
-
-
-def init_cards(app):
-    """Initialize and populate the cards database."""
-    from .cards import CardsManager
-
-    with app.app_context():
-        with CardsManager() as manager:
-            manager.populate_card_database()
