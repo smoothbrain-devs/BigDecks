@@ -66,9 +66,9 @@ def create_app(test_configuration=None):
     from .database.cards_db import init_app as init_cards_db_app
     init_cards_db_app(app)
 
-    from . import auth, home
+    from . import auth, cards, home
     app.register_blueprint(auth.bp)
-    # app.register_blueprint(cards.bp)
+    app.register_blueprint(cards.bp)
     app.register_blueprint(home.bp)
 
     return app
