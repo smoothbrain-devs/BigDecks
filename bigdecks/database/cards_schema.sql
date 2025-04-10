@@ -10,8 +10,8 @@ CREATE TABLE IF NOT EXISTS core (
     rulings_uri TEXT,
     scryfall_uri TEXT,  -- Link to scryfall page for the card.
     uri TEXT,  -- Link to download the card object from scryfall api.
-    all_parts BOOLEAN, -- If true, corresponding entries in all_parts table.
-    card_faces BOOLEAN,  -- If true, corresponding entries in card_faces table.
+    all_parts BOOLEAN NOT NULL, -- If true, corresponding entries in all_parts table.
+    card_faces BOOLEAN NOT NULL,  -- If true, corresponding entries in card_faces table.
     cmc REAL NOT NULL,
     color_identity TEXT NOT NULL,  -- JSON Colors array (strings or empty).
     color_indicator TEXT,  -- JSON Colors array.

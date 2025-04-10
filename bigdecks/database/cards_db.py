@@ -1,9 +1,9 @@
 """Cards database management and maintenance."""
 
 
-import os
 import click
 import json
+import os
 import re
 import sqlite3
 from contextlib import closing
@@ -103,6 +103,7 @@ def _populate() -> bool:
         with closing(get_db_connection("cards")) as conn:
             cursor = conn.cursor()
 
+            log_file = open("db_pop_debug.log", "w")
             try:
                 with open(file=default_cards,
                           mode="rb") as f:
@@ -132,6 +133,8 @@ def _populate() -> bool:
                                 _insert_card_face(cursor, card["id"],
                                                   card["card_faces"])
 
+                            click.echo(f"{card['name']}: {card['set_name']}, "
+                                       f"{card['id']}", file=log_file)
                             cards_inserted += 1
 
                             # Commit every 1000 cards
@@ -139,9 +142,11 @@ def _populate() -> bool:
                                 conn.commit()
                                 conn.execute("BEGIN TRANSACTION")
                                 elapsed = datetime.now() - start_time
-                                click.echo(f"Processed {cards_processed} "
-                                           f"cards, inserted {cards_inserted} "
-                                           f"in {elapsed}")
+                                click.echo(f"Processed {cards_processed:>6} "
+                                           f"cards, "
+                                           f"inserted {cards_inserted:>6} "
+                                           f"in {elapsed.total_seconds():.2f} "
+                                           "seconds.")
 
                         except Exception as e:
                             click.echo("Error processing card "
@@ -150,9 +155,15 @@ def _populate() -> bool:
                             continue
 
             except FileNotFoundError:
-                click.echo("Error: Default cards.json not found. Run download "
-                           "command first.", err=True)
+                click.echo("Error: Default cards.json not found.", err=True)
 
+            conn.commit()
+            elapsed = datetime.now() - start_time
+            click.echo(f"Processed {cards_processed:>6} "
+                       f"cards, inserted {cards_inserted:>6} "
+                       f"in {elapsed.total_seconds():.2f} seconds.")
+
+            log_file.close()
         end_time = datetime.now()
         elapsed = end_time - start_time
         click.echo("Database population complete")
@@ -179,9 +190,9 @@ def _get_card_types(typeline: str) -> dict[str, str]:
 
     Returns
     -------
-    dict[str, str]
-        If a key is present in the dictionary, the value will be a stringified
-        json array with 1 or more values.
+    dict[str, list[str]]
+        If a key is present in the dictionary, the value will be a json array
+        with 1 or more values.
         Possible keys: "supertype", "subtype"
         Guaranteed key: "cardtype"
     """
@@ -200,8 +211,8 @@ def _get_card_types(typeline: str) -> dict[str, str]:
                                           if st in supertypes])
     card_types["cardtype"] = json.dumps([mt for mt in types
                                          if mt in cardtypes])
-    card_types["subtype"] = json.dumps([t for t in types if
-                                        t not in supertypes and
+    card_types["subtype"] = json.dumps([t for t in types
+                                        if t not in supertypes and
                                         t not in cardtypes])
     return card_types
 
@@ -217,55 +228,33 @@ def _insert_core_data(cursor: sqlite3.Cursor,
     card: dict
         Card data from Scryfall
     """
-    # Prepare multiverse_ids if present
-    if 'multiverse_ids' in card:
-        multiverse_ids = json.dumps(card.get('multiverse_ids', []))
-    else:
-        multiverse_ids = None
-
     # Check for card_faces and all_parts
     has_card_faces = 'card_faces' in card and bool(card['card_faces'])
     has_all_parts = 'all_parts' in card and bool(card['all_parts'])
 
     # Arrays that need to be converted to JSON
+    # These are converted to jsonb in the sql statement.
     #####################################################################
-    color_identity = json.dumps(card.get('color_identity', []))
-    if 'color_indicator' in card:
-        color_indicator = json.dumps(card.get('color_indicator', []))
-    else:
-        color_indicator = None
+    multiverse_ids = card.get('multiverse_ids', [])
 
-    if 'colors' in card:
-        colors = json.dumps(card.get('colors', []))
-    else:
-        colors = None
+    color_identity = card.get('color_identity', [])
 
-    keywords = json.dumps(card.get('keywords', []))
+    color_indicator = card.get('color_indicator', [])
 
-    if 'produced_mana' in card:
-        produced_mana = json.dumps(card.get('produced_mana', []))
-    else:
-        produced_mana = None
+    colors = card.get('colors', [])
 
-    if 'artist_ids' in card:
-        artist_ids = json.dumps(card.get('artist_ids', []))
-    else:
-        artist_ids = None
+    keywords = card.get('keywords', [])
 
-    if 'attraction_lights' in card:
-        attraction_lights = json.dumps(card.get('attraction_lights', []))
-    else:
-        attraction_lights = None
+    produced_mana = card.get('produced_mana', [])
 
-    if 'frame_effects' in card:
-        frame_effects = json.dumps(card.get('frame_effects', []))
-    else:
-        frame_effects = None
+    artist_ids = card.get('artist_ids', [])
 
-    if 'promo_types' in card:
-        promo_types = json.dumps(card.get('promo_types', []))
-    else:
-        promo_types = None
+    attraction_lights = card.get('attraction_lights', [])
+
+    frame_effects = card.get('frame_effects', [])
+
+    promo_types = card.get('promo_types', [])
+
     ######################################################################
 
     # Extract legalities
@@ -300,7 +289,7 @@ def _insert_core_data(cursor: sqlite3.Cursor,
         card.get("arena_id"),
         card.get("mtgo_id"),
         card.get("mtgo_foil_id"),
-        multiverse_ids,
+        json.dumps(multiverse_ids),
         card.get("layout"),
         card.get("oracle_id"),
         card.get("rulings_uri"),
@@ -309,13 +298,13 @@ def _insert_core_data(cursor: sqlite3.Cursor,
         has_all_parts,
         has_card_faces,
         card.get("cmc", 0.0),
-        color_identity,
-        color_indicator,
-        colors,
+        json.dumps(color_identity),
+        json.dumps(color_indicator),
+        json.dumps(colors),
         card.get("defense"),
         card.get("game_changer", False),
         card.get("hand_modifier"),
-        keywords,
+        json.dumps(keywords),
         # Legalities
         legalities.get("standard", "not_legal"),
         legalities.get("future", "not_legal"),
@@ -345,7 +334,7 @@ def _insert_core_data(cursor: sqlite3.Cursor,
         card.get("name"),
         card.get("oracle_text"),
         card.get("power"),
-        produced_mana,
+        json.dumps(produced_mana),
         card.get("reserved", False),
         card.get("toughness"),
         card.get("type_line"),
@@ -353,8 +342,8 @@ def _insert_core_data(cursor: sqlite3.Cursor,
         card.get("cardtype"),
         card.get("subtype"),
         card.get("artist"),
-        artist_ids,
-        attraction_lights,
+        json.dumps(artist_ids),
+        json.dumps(attraction_lights),
         card.get("booster", False),
         card.get("border_color"),
         card.get("card_back_id", ""),
@@ -367,7 +356,7 @@ def _insert_core_data(cursor: sqlite3.Cursor,
         has_etched,
         card.get("flavor_name"),
         card.get("flavor_text"),
-        frame_effects,
+        json.dumps(frame_effects),
         card.get("frame"),
         card.get("full_art", False),
         # Games availability
@@ -397,7 +386,7 @@ def _insert_core_data(cursor: sqlite3.Cursor,
         card.get("printed_text"),
         card.get("printed_type_line"),
         card.get("promo", False),
-        promo_types,
+        json.dumps(promo_types),
         card.get("rarity"),
         card.get("released_at"),
         card.get("reprint", False),
@@ -419,35 +408,31 @@ def _insert_core_data(cursor: sqlite3.Cursor,
     # Create the SQL query
     query = """
     INSERT OR REPLACE INTO core (
-        scryfall_id, arena_id, mtgo_id, mtgo_foil_id, multiverse_ids,
-        layout, oracle_id, rulings_uri, scryfall_uri, uri,
-        all_parts, card_faces, cmc, color_identity, color_indicator,
-        colors, defense, game_changer, hand_modifier, keywords,
-        standard, future, historic, timeless, gladiator,
-        pioneer, explorer, modern, legacy, pauper,
-        vintage, penny, commander, oathbreaker, standardbrawl,
-        brawl, alchemy, paupercommander, duel, oldschool,
-        premodern, predh, life_modifier, loyalty, mana_cost,
-        name, oracle_text, power, produced_mana, reserved,
-        toughness, type_line, supertype, cardtype, subtype, artist,
-        artist_ids, attraction_lights, booster, border_color, card_back_id,
+        scryfall_id, arena_id, mtgo_id, mtgo_foil_id, multiverse_ids, layout,
+        oracle_id, rulings_uri, scryfall_uri, uri, all_parts, card_faces, cmc,
+        color_identity, color_indicator, colors, defense, game_changer,
+        hand_modifier, keywords, standard, future, historic, timeless,
+        gladiator, pioneer, explorer, modern, legacy, pauper, vintage, penny,
+        commander, oathbreaker, standardbrawl, brawl, alchemy, paupercommander,
+        duel, oldschool, premodern, predh, life_modifier, loyalty, mana_cost,
+        name, oracle_text, power, produced_mana, reserved, toughness,
+        type_line, supertype, cardtype, subtype, artist, artist_ids,
+        attraction_lights, booster, border_color, card_back_id,
         collector_number, content_warning, digital, foil, nonfoil, etched,
-        flavor_name, flavor_text, frame_effects, frame, full_art, paper,
-        arena, mtgo, highres_image, illustration_id, image_status, png,
-        border_crop, art_crop, large, normal, small, oversized, price_usd,
-        price_usd_foil, price_usd_etched, price_eur, price_eur_foil,
-        price_eur_etched, price_tix, printed_name, printed_text,
-        printed_type_line, promo, promo_types, rarity, released_at,
-        reprint, scryfall_set_uri, set_name, set_search_uri, set_type,
-        set_uri, set_code, set_id, story_spotlight, textless, variation,
-        variation_of, security_stamp, watermark
+        flavor_name, flavor_text, frame_effects, frame, full_art, paper, arena,
+        mtgo, highres_image, illustration_id, image_status, png, border_crop,
+        art_crop, large, normal, small, oversized, price_usd, price_usd_foil,
+        price_usd_etched, price_eur, price_eur_foil, price_eur_etched,
+        price_tix, printed_name, printed_text, printed_type_line, promo,
+        promo_types, rarity, released_at, reprint, scryfall_set_uri, set_name,
+        set_search_uri, set_type, set_uri, set_code, set_id, story_spotlight,
+        textless, variation, variation_of, security_stamp, watermark
     ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
     )
     """
 
@@ -511,15 +496,9 @@ def _insert_card_face(cursor: sqlite3.Cursor, core_id: str,
     all_params = []
     for face in card_faces:
         # Convert list to JSON array or None
-        if "color_indicator" in face:
-            color_indicator = json.dumps(face.get("color_indicator", []))
-        else:
-            color_indicator = None
+        color_indicator = face.get("color_indicator", [])
 
-        if "colors" in face:
-            colors = json.dumps(face.get("colors", []))
-        else:
-            colors = None
+        colors = face.get("colors", [])
 
         # Extract image uris
         image_uris = face.get("image_uris", {})
@@ -531,8 +510,8 @@ def _insert_card_face(cursor: sqlite3.Cursor, core_id: str,
             core_id,
             face.get("artist_id"),
             face.get("cmc"),
-            color_indicator,
-            colors,
+            json.dumps(color_indicator),
+            json.dumps(colors),
             face.get("defense"),
             face.get("flavor_text"),
             face.get("illustration_id"),
@@ -570,8 +549,8 @@ def _insert_card_face(cursor: sqlite3.Cursor, core_id: str,
         printed_type_line, toughness, type_line, supertype, cardtype,
         subtype, watermark
     ) VALUES (
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?
     )
     """
 
