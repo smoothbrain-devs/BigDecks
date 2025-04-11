@@ -10,7 +10,33 @@ import sqlite3
 
 
 class CardFace():
-    """Represents card faces for cards with more than one face."""
+    """Represents card faces for cards with more than one face.
+
+    Available properties
+    --------------------
+    - id
+    - cmc
+    - color_indicator
+    - colors
+    - defense
+    - flavor_text
+    - illustration_id
+    - image_uris
+    - layout
+    - loyalty
+    - mana_cost
+    - name
+    - oracle_text
+    - power
+    - printed_name
+    - printed_text
+    - printed_type_line
+    - toughness
+    - type_line
+    - super_type
+    - card_type
+    - sub_type
+    """
     def __init__(self, row: dict[str, object], parent: Card):
         self.__id = row["id"]
         assert isinstance(self.__id, int)
@@ -92,8 +118,13 @@ class CardFace():
         return self.__colors
 
     @property
-    def defense(self) -> str | None:
+    def defense(self, conn: sqlite3.Connection | None = None) -> str | None:
         """Get the defense of this card face.
+
+        Parameters
+        ----------
+        conn: sqlite3.Connection | None (default None)
+            Connection to the database
 
         Returns
         -------
@@ -101,13 +132,14 @@ class CardFace():
             str, if this card has defense.
             None, otherwise.
         """
-        conn = get_db_connection("cards")
+        if conn is None:
+            conn = get_db_connection("cards")
         row = conn.execute(
             """
-                SELECT defense
-                FROM card_faces
-                WHERE id = ?;
-                """,
+            SELECT defense
+            FROM card_faces
+            WHERE id = ?;
+            """,
             (self.id,)).fetchone()
         return row["defense"] if "defense" in row.keys() else None
 
@@ -125,20 +157,22 @@ class CardFace():
         return self.__flavor_text
 
     @property
-    def illustration_id(self) -> str | None:
+    def illustration_id(self,
+                        conn: sqlite3.Connection | None = None) -> str | None:
         """Get the illustration ID for this card face's art.
 
         Returns
         -------
         str | None
         """
-        conn = get_db_connection("cards")
+        if conn is None:
+            conn = get_db_connection("cards")
         row = conn.execute(
             """
-                SELECT illustration_id
-                FROM card_faces
-                WHERE id = ?;
-                """,
+            SELECT illustration_id
+            FROM card_faces
+            WHERE id = ?;
+            """,
             (self.id,)).fetchone()
         if "illustration_id" in row.keys():
             result = row["illustration_id"]
@@ -170,14 +204,15 @@ class CardFace():
         return self.__layout
 
     @property
-    def loyalty(self) -> str | None:
+    def loyalty(self, conn: sqlite3.Connection | None = None) -> str | None:
         """Get the loyalty for this card face.
 
         Returns
         -------
         str | None
         """
-        conn = get_db_connection("cards")
+        if conn is None:
+            conn = get_db_connection("cards")
         row = conn.execute(
             """
             SELECT loyalty
@@ -232,14 +267,16 @@ class CardFace():
         return self.__power
 
     @property
-    def printed_name(self) -> str | None:
+    def printed_name(self,
+                     conn: sqlite3.Connection | None = None) -> str | None:
         """Get the localized name for this card face.
 
         Returns
         -------
         str | None
         """
-        conn = get_db_connection("cards")
+        if conn is None:
+            conn = get_db_connection("cards")
         row = conn.execute(
             """
             SELECT printed_name
@@ -250,14 +287,16 @@ class CardFace():
         return row["printed_name"] if "printed_name" in row.keys() else None
 
     @property
-    def printed_text(self) -> str | None:
+    def printed_text(self,
+                     conn: sqlite3.Connection | None = None) -> str | None:
         """Get the localized oracle text for this card face.
 
         Returns
         -------
         str | None
         """
-        conn = get_db_connection("cards")
+        if conn is None:
+            conn = get_db_connection("cards")
         row = conn.execute(
             """
             SELECT printed_text
@@ -268,14 +307,16 @@ class CardFace():
         return row["printed_text"] if "printed_text" in row.keys() else None
 
     @property
-    def printed_type_line(self) -> str | None:
+    def printed_type_line(self, conn: sqlite3.Connection | None = None
+                          ) -> str | None:
         """Get the localized type line for this card face.
 
         Returns
         -------
         str | None
         """
-        conn = get_db_connection("cards")
+        if conn is None:
+            conn = get_db_connection("cards")
         row = conn.execute(
             """
             SELECT printed_type_line
@@ -353,8 +394,11 @@ class CardFace():
 
     @classmethod
     def get_card_faces(cls, parent: Card,
-                       conn: sqlite3.Connection) -> list[CardFace]:
+                       conn: sqlite3.Connection | None = None
+                       ) -> list[CardFace]:
         """Instantiates a CardFace object"""
+        if conn is None:
+            conn = get_db_connection("cards")
         rows = conn.execute(
             """
             SELECT *
