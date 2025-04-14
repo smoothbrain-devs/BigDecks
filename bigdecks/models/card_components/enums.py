@@ -71,3 +71,15 @@ class Legality(Flag):
     def __str__(self):
         assert self.name is not None
         return self.name
+
+
+class Rarity(Flag):
+    """Enum containing the possible rarities of a card."""
+    common = auto()
+    uncommon = auto()
+    rare = auto()
+    mythic = auto()
+
+    def __str__(self):
+        assert self.name is not None
+        return self.name
