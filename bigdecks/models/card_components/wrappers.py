@@ -184,7 +184,19 @@ class ImageUris():
         }
 
     def __get_uri(self, key: str, row: dict[str, object]) -> str | None:
-        """Ensure some type safety."""
+        """Get value from database row.
+
+        Parameters
+        ----------
+        key: str
+            key name to index.
+        row: dict[str, object]
+            sqlite3.Row object converted to a dict.
+
+        Returns
+        -------
+        str | None
+        """
         val = row.get(key)
         assert isinstance(val, (str | None))
         return val
@@ -282,3 +294,101 @@ class ImageUris():
     def as_dict(self) -> dict[str, str | None]:
         """Returns a copy of the underlying dict containing the image uris."""
         return self.__data.copy()
+
+
+class Prices():
+    """Wrapper for dict containing price information for a card."""
+    def __init__(self, row: dict[str, object]):
+        self.__prices = {
+            "price_usd": self.__get_price("price_usd", row),
+            "price_usd_foil": self.__get_price("price_usd_foil", row),
+            "price_usd_etched": self.__get_price("price_usd_etched", row),
+            "price_eur": self.__get_price("price_eur", row),
+            "price_eur_foil": self.__get_price("price_eur_foil", row),
+            "price_eur_etched": self.__get_price("price_eur_etched", row),
+            "price_tix": self.__get_price("price_tix", row)
+        }
+
+    def __get_price(self, key: str, row: dict[str, object]) -> str | None:
+        """Get value from database row.
+
+        Parameters
+        ----------
+        key: str
+            key name to index.
+        row: dict[str, object]
+            sqlite3.Row object converted to a dict.
+
+        Returns
+        -------
+        str | None
+        """
+        price = row.get(key)
+        assert isinstance(price, (str | None))
+        return price
+
+    @property
+    def usd(self, finish="normal") -> str | None:
+        """Get the price in USD.
+
+        Parameters
+        ----------
+        finish: str (default = 'normal')
+            Options:
+                'normal'
+                'foil'
+                'etched'
+
+        Returns
+        -------
+        str | None
+        """
+        match finish:
+            case "normal":
+                key = "price_usd"
+            case "foil":
+                key = "price_usd_foil"
+            case "etched":
+                key = "price_usd_etched"
+
+        assert isinstance(self.__prices[key], (str | None))
+        return self.__prices[key]
+
+    @property
+    def eur(self, finish="normal") -> str | None:
+        """Get the price in EUR.
+
+        Parameters
+        ----------
+        finish: str (default = 'normal')
+            Options:
+                'normal'
+                'foil'
+                'etched'
+
+        Returns
+        -------
+        str | None
+        """
+        match finish:
+            case "normal":
+                key = "price_eur"
+            case "foil":
+                key = "price_eur_foil"
+            case "etched":
+                key = "price_eur_etched"
+
+        assert isinstance(self.__prices[key], (str | None))
+        return self.__prices[key]
+
+    @property
+    def tix(self) -> str | None:
+        """Get the price in TIX.
+
+        Returns
+        -------
+        str | None
+        """
+        assert isinstance(self.__prices["price_tix"], (str | None))
+        return self.__prices["price_tix"]
+
