@@ -79,6 +79,8 @@ class Rarity(Flag):
     uncommon = auto()
     rare = auto()
     mythic = auto()
+    special = auto()
+    bonus = auto()
 
     def __str__(self):
         assert self.name is not None
