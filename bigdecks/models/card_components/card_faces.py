@@ -5,7 +5,9 @@ from __future__ import annotations
 from .enums import Colors
 from .wrappers import ImageUris
 from bigdecks.database import get_db_connection
-from bigdecks.models.card import Card
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from bigdecks.models.card import Card
 import sqlite3
 
 
@@ -51,7 +53,7 @@ class CardFace():
         self.__image_uris = ImageUris(row)
         assert isinstance(self.__image_uris, ImageUris)
         self.__layout = row.get("layout")
-        assert isinstance(self.__layout, str)
+        assert isinstance(self.__layout, (str | None))
         self.__mana_cost = row["mana_cost"]
         assert isinstance(self.__mana_cost, str)
         self.__name = row["name"]
