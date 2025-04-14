@@ -392,3 +392,6 @@ class Prices():
         assert isinstance(self.__prices["price_tix"], (str | None))
         return self.__prices["price_tix"]
 
+    def as_dict(self) -> dict[str, str | None]:
+        """Get the prices as a dictionary."""
+        return self.__prices.copy()
