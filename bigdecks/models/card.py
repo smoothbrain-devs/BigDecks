@@ -6,10 +6,12 @@ from bigdecks.database import get_db_connection
 from .card_components.enums import (
     Colors,
     GameAvailability,
+    Rarity
 )
 from .card_components.wrappers import (
     CardLegalities,
-    ImageUris
+    ImageUris,
+    Prices
 )
 from .card_components.card_faces import CardFace
 from .card_components.related_parts import RelatedParts
@@ -35,18 +37,31 @@ class Card:
     - cmc
     - color_identity
     - colors
+    - defense
+    - game_changer
     - keywords
     - legality
+    - loyalty
+    - mana_cost
     - name
     - oracle text
+    - power
+    - toughness
     - type_line
     - super_type
     - card_type
     - sub_type
     - collector_number
+    - flavor_name **
     - flavor_text
     - game_availability
     - image_uris
+    - prices
+    - printed_name **
+    - printed_text **
+    - printed_type_line **
+    - rarity
+    - prints
     - set_name
     - set_code
     """
@@ -77,11 +92,17 @@ class Card:
         self.__colors = self._get_colors(row.get("colors"))
         assert isinstance(self.__colors, (Colors | None))
         self.__keywords = self._parse_json_array(row["keywords"])
+        assert isinstance(self.__keywords, (list | None))
         self.__legality = CardLegalities(row)
+        assert isinstance(self.__legality, CardLegalities)
         self.__name = row["name"]
         assert isinstance(self.__name, str)
         self.__oracle_text = row.get("oracle_text")
         assert isinstance(self.__oracle_text, (str | None))
+        self.__power = row.get("power")
+        assert isinstance(self.__power, (str | None))
+        self.__toughness = row.get("toughness")
+        assert isinstance(self.__toughness, (str | None))
         self.__type_line = row["type_line"]
         assert isinstance(self.__type_line, str)
         self.__supertype = self._parse_json_array(row["supertype"])
@@ -98,6 +119,11 @@ class Card:
         assert isinstance(self.__game_availability, GameAvailability)
         self.__image_uris = ImageUris(row)
         assert isinstance(self.__image_uris, ImageUris)
+        self.__prices = Prices(row)
+        assert isinstance(self.__prices, Prices)
+        self.__rarity = self.__get_rarity(row)
+        assert isinstance(self.__rarity, (Rarity | None))
+        self.__prints = self.__get_other_prints(conn)
         self.__set_name = row["set_name"]
         assert isinstance(self.__set_name, str)
         self.__set_code = row["set_code"]
@@ -133,6 +159,8 @@ class Card:
             f"Legality: {self.legality.as_dict()}\n"\
             f"Name: {self.name}\n"\
             f"Oracle Text: {self.oracle_text}\n"\
+            f"Power: {self.power}\n"\
+            f"Toughness: {self.toughness}\n"\
             f"Type line: {self.type_line}\n"\
             f"Super types: {self.super_type}\n"\
             f"Card types: {self.card_type}\n"\
@@ -141,6 +169,7 @@ class Card:
             f"Flavor text: {self.flavor_text}\n"\
             f"Game availability: {self.game_availability.as_dict()}\n"\
             f"Image uris: {self.image_uris.as_dict()}\n"\
+            f"Prices: {self.prices.as_dict()}\n"\
             f"Set Name: {self.set_name}\n"\
             f"Set Code: {self.set_code}\n"
         return rep
@@ -184,15 +213,8 @@ class Card:
         if not (bool(self.__game_availability & GameAvailability.arena)):
             arena_id = None
         else:
-            conn = get_db_connection("cards")
-            arena_id = int(conn.execute(
-                """
-                SELECT arena_id
-                FROM core
-                WHERE id = ?;
-                """,
-                (self.id,)).fetchone())
-            assert isinstance(arena_id, int)
+            from bigdecks.services.card_service import CardService
+            arena_id = CardService.get_arena_id(self.id)
         return arena_id
 
     @property
@@ -319,6 +341,124 @@ class Card:
         return self.__colors
 
     @property
+    def defense(self, conn: sqlite3.Connection | None = None) -> str:
+        """Get the defense for this card.
+
+        Parameters
+        ----------
+        conn: sqlite3.Connection | None (default = None)
+            Connection to cards database.
+
+        Returns
+        -------
+        str
+        """
+        assert isinstance(conn, (sqlite3.Connection | None))
+        if not conn:
+            conn = get_db_connection("cards")
+
+        defense = conn.execute(
+            """
+            SELECT defense
+            FROM core
+            WHERE id = ?;
+            """,
+            (self.id,)).fetchone()
+        assert isinstance(defense, str)
+        return defense
+
+    @property
+    def game_changer(self, conn: sqlite3.Connection | None = None) -> bool:
+        """Get whether this card is a 'game changer.'
+
+        Parameters
+        ----------
+        conn: sqlite3.Connection | None (default = None)
+            Connection to cards database.
+
+        Returns
+        -------
+        bool
+        """
+        assert isinstance(conn, (sqlite3.Connection | None))
+
+        if not conn:
+            conn = get_db_connection("cards")
+
+        game_changer = conn.execute(
+            """
+            SELECT game_changer
+            FROM core
+            WHERE id = ?;
+            """,
+            (self.id,)).fetchone()
+        game_changer = bool(game_changer)
+
+        return game_changer
+
+    @property
+    def loyalty(self, conn: sqlite3.Connection | None = None) -> str | None:
+        """Get the loyalty for this card.
+
+        Parameters
+        ----------
+        conn: sqlite3.Connection | None (default = None)
+            Connection to cards database.
+
+        Returns
+        -------
+        str | None
+            str, if this card has a loyalty value.
+            None otherwise.
+        """
+        assert isinstance(conn, (sqlite3.Connection | None))
+
+        if not conn:
+            conn = get_db_connection("cards")
+
+        loyalty = conn.execute(
+            """
+            SELECT loyalty
+            FROM core
+            WHERE id = ?;
+            """,
+            (self.id,)).fetchone()
+
+        assert isinstance(loyalty, (str | None))
+        return loyalty
+
+    @property
+    def mana_cost(self, conn: sqlite3.Connection | None = None) -> str | None:
+        """Get the mana cost for this card.
+
+        Parameters
+        ----------
+        conn: sqlite3.Connection | None (default = None)
+            Connection to cards database.
+
+        Returns
+        -------
+        str | None
+            str, if this card has a mana cost.
+            None otherwise.
+        """
+        assert isinstance(conn, (sqlite3.Connection | None))
+
+        if not conn:
+            conn = get_db_connection("cards")
+
+        mana_cost = conn.execute(
+            """
+            SELECT mana_cost
+            FROM core
+            WHERE id = ?;
+            """,
+            (self.id,)).fetchone()
+
+        assert isinstance(mana_cost, (str | None))
+        return mana_cost
+
+    @property
     def keywords(self) -> list[str] | None:
         """List of the keywords of this card if any. Otherwise None.
 
@@ -362,6 +502,28 @@ class Card:
         """
         assert isinstance(self.__oracle_text, (str | None))
         return self.__oracle_text
+
+    @property
+    def power(self) -> str | None:
+        """Get the power for this card.
+
+        Returns
+        -------
+        str | None
+        """
+        assert isinstance(self.__power, (str | None))
+        return self.__power
+
+    @property
+    def toughness(self) -> str | None:
+        """Get the toughness for this card.
+
+        Returns
+        -------
+        str | None
+        """
+        assert isinstance(self.__toughness, (str | None))
+        return self.__toughness
 
     @property
     def type_line(self) -> str:
@@ -426,6 +588,11 @@ class Card:
         return self.__collector_number
 
     @property
+    def flavor_name(self) -> str | None:
+        # from bigdecks.service
+        ...
+
+    @property
     def flavor_text(self) -> str | None:
         """Get the flavor text for this card. Note, a card may not have flavor
         text.
@@ -471,6 +638,40 @@ class Card:
         """
         assert isinstance(self.__image_uris, ImageUris)
         return self.__image_uris
+
+    @property
+    def prices(self) -> Prices:
+        """Get the prices for this card.
+
+        Returns
+        -------
+        Prices
+            Access data members using dot notation or retrieve all prices as a
+            dict using .as_dict()
+        """
+        assert isinstance(self.__prices, Prices)
+        return self.__prices
+
+    @property
+    def rarity(self) -> Rarity:
+        """Get the rarity for this card.
+
+        Returns
+        -------
+        Rarity
+        """
+        assert isinstance(self.__rarity, Rarity)
+        return self.__rarity
+
+    @property
+    def prints(self) -> list[dict[str, str | ImageUris]] | None:
+        """Get the list of prints for this card.
+
+        Returns
+        -------
+        list[dict[str, str | ImageUris]
+        """
+        return self.__prints
 
     @property
     def set_name(self) -> str:
@@ -550,6 +751,61 @@ class Card:
 
         return availability
 
+    def __get_rarity(self, row: dict[str, object]) -> Rarity | None:
+        """Returns rarity enum or None based on the card rarity."""
+        match row.get("rarity"):
+            case "common":
+                rarity = Rarity.common
+
+            case "uncommon":
+                rarity = Rarity.uncommon
+
+            case "rare":
+                rarity = Rarity.rare
+
+            case "mythic":
+                rarity = Rarity.mythic
+
+            case "special":
+                rarity = Rarity.special
+
+            case "bonus":
+                rarity = Rarity.bonus
+
+            case _:
+                rarity = None
+
+        return rarity
+
+    def __get_other_prints(self, conn: sqlite3.Connection | None = None
+                           ) -> list[dict[str, str | ImageUris]] | None:
+        """Get a list of other printings of this card.
+
+        Parameters
+        ----------
+        conn: sqlite3.Connection
+            Connection to 'cards' database
+
+        Returns
+        -------
+        list[dict[str, str | ImageUris]] | None
+        """
+        from bigdecks.services.card_service import CardService
+
+        rows = CardService.get_prints(self.name, conn=conn)
+
+        if rows is None:
+            prints = None
+
+        else:
+            prints = []
+            for row in rows:
+                prints.append({"scryfall_id": row["scryfall_id"],
+                               "set_name": row["set_name"],
+                               "images": ImageUris(dict(row))})
+
+        return prints
+
     def _parse_json_array(self, field: object | None) -> list[str] | None:
         """Parses a json array, returns a list[str] of the items, an empty
         list if no items are present, or None if the field is null.
@@ -570,64 +826,3 @@ class Card:
 
         array = json.loads(field)
         return [str(element) for element in array] if array else []
-
-    @classmethod
-    def get_random_card(cls, connection=None) -> Card:
-        """Selects a card at random from the database.
-
-        Parameters
-        ----------
-        connection: sqlite3.Connection | None (default = None)
-            Connection to a database with card information.
-        """
-        if connection is None:
-            conn = get_db_connection("cards")
-        else:
-            conn = connection
-        row = conn.execute(
-            """
-            SELECT id, scryfall_id, layout, all_parts, card_faces, cmc,
-            color_identity, keywords, standard, future, historic, timeless,
-            gladiator, pioneer, explorer, modern, legacy, pauper, vintage,
-            penny, commander, oathbreaker, standardbrawl, brawl, alchemy,
-            paupercommander, duel, oldschool, premodern, predh, name,
-            oracle_text, type_line, supertype, cardtype, subtype,
-            collector_number, flavor_text, paper, arena, mtgo, png,
-            border_crop, art_crop, large, normal, small, set_name, set_code
-            FROM core
-            ORDER BY RANDOM()
-            LIMIT 1;
-            """).fetchone()
-        return Card(dict(row), conn)
-
-    @classmethod
-    def get_card_by_scryfall_id(cls, scryfall_id: str,
-                                connection=None) -> Card:
-        """Selects the card with the scryfall_id specified.
-
-        Parameters
-        ----------
-        scryfall_id: str
-            The scryfall UUID for the card.
-        connection: sqlite3.Connection | None (default = None)
-            Connection to a database with card information.
-        """
-        assert isinstance(scryfall_id, str)
-        if connection is None:
-            conn = get_db_connection("cards")
-        else:
-            conn = connection
-        row = conn.execute(
-            """
-            SELECT id, scryfall_id, layout, all_parts, card_faces, cmc,
-            color_identity, keywords, standard, future, historic, timeless,
-            gladiator, pioneer, explorer, modern, legacy, pauper, vintage,
-            penny, commander, oathbreaker, standardbrawl, brawl, alchemy,
-            paupercommander, duel, oldschool, premodern, predh, name,
-            oracle_text, type_line, supertype, cardtype, subtype,
-            collector_number, flavor_text, paper, arena, mtgo, png,
-            border_crop, art_crop, large, normal, small, set_name, set_code
-            FROM core
-            WHERE scryfall_id = ?;
-            """, (scryfall_id,)).fetchone()
-        return Card(dict(row), conn)
