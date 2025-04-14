@@ -11,6 +11,7 @@ from . import get_db_connection
 from datetime import datetime
 from flask import current_app, Flask
 from flask.cli import with_appcontext
+from bigdecks.services.scryfall_service import update_default_cards
 
 
 @click.group()
@@ -27,6 +28,9 @@ def init_app(app: Flask):
 @with_appcontext
 def populate_command():
     """Populates the cards database."""
+    if update_default_cards():
+        click.echo("default_cards.json updated")
+
     success = _populate()
     if success:
         click.echo("Database populated successfully")
@@ -38,6 +42,9 @@ def populate_command():
 @with_appcontext
 def rebuild_command():
     """Rebuild the database"""
+    if update_default_cards():
+        click.echo("default_cards.json updated")
+
     success = _rebuild()
     if success:
         click.echo("Rebuild successful")
