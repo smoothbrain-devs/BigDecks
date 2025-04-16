@@ -355,7 +355,7 @@ class Card:
         str
         """
         from bigdecks.services.card_service import CardService
-        defense = CardService.get_defense(self.id, conn)
+        defense = CardService.get_defense(self.id, "card", conn)
         assert isinstance(defense, str)
         return defense
 
