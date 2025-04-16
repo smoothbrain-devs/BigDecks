@@ -6,6 +6,7 @@ import os
 import sqlite3
 from datetime import datetime
 from flask import Flask, g, current_app
+from flask.cli import with_appcontext
 
 
 sqlite3.register_converter(
@@ -26,15 +27,26 @@ def init_app(app: Flask):
     app: Flask
         The Flask app instance.
     """
-    # Create the users and cards databases
-    with app.app_context():
-        for db in ["users", "cards"]:
-            init_db(db)
+
+    os.makedirs(app.instance_path, exist_ok=True)
 
     # Create the users and cards databases
     with app.app_context():
-        for db in ["users", "cards"]:
-            init_db(db)
+        for db in ["users", "cards", "post"]:
+            try:
+                init_db(db)
+            except Exception as e:
+                click.echo(f"Error initializing {db} database: {e}")
+
+    # Duplicate Code?
+
+    # Create the users and cards databases
+    #with app.app_context():
+    #    for db in ["users", "cards"]:
+    #        init_db(db)
+
+    # Register CLI command
+    app.cli.add_command(init_db_command)
 
     # Register the teardown function to close database connections
     app.teardown_appcontext(close_connections)
@@ -59,22 +71,36 @@ def init_db(db_name: str) -> None:
 
     if not db_exists:
         click.echo(f"Creating the {db_name} database")
-        if db_name in ["users", "cards"]:
+        if db_name in ["users", "cards", "post"]:
             schema_path = os.path.join("database", f"{db_name}_schema.sql")
         conn = get_db_connection(db_name)
 
         if schema_path is not None:
-            with current_app.open_resource(schema_path) as f:
-                try:
-                    conn.executescript(f.read().decode("utf8"))
-                except Exception as e:
-                    print(f"Error occurred in {db_name}_schema.sql:")
-                    print("\t", e)
+            conn = get_db_connection(db_name)
+            full_schema_path = os.path.join(current_app.root_path, schema_path)
+            if os.path.exists(full_schema_path):
+                with current_app.open_resource(schema_path) as f:
+                    try:
+                        conn.executescript(f.read().decode("utf8"))
+                        conn.commit()
+                    except Exception as e:
+                        print(f"Error occurred in {db_name}_schema.sql:")
+                        print("\t", e)
+            else:
+                raise FileNotFoundError(f"{schema_path} does not exist")
         else:
-            raise FileNotFoundError(f"{schema_path} does not exist")
+            raise FileNotFoundError(f"{db_name} does not exist.")
     else:
-        raise FileNotFoundError(f"{db_name} does not exist.")
+        pass
 
+
+
+@click.command("init-db")
+@click.argument("db_name", required=True)
+@with_appcontext
+def init_db_command(db_name):
+    """Command to initialize a database via Flask CLI."""
+    init_db(db_name)
 
 def get_db_connection(db_name: str) -> sqlite3.Connection:
     """Get a database connection, creating it if it doesn't exist already.
@@ -129,4 +155,5 @@ def _get_db_path(db_name: str) -> str:
     """
     instance_path = current_app.instance_path
     db_path = os.path.join(instance_path, f"{db_name}.db")
+    os.makedirs(instance_path, exist_ok=True)
     return db_path

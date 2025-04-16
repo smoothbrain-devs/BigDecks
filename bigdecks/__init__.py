@@ -60,6 +60,14 @@ def create_app(test_configuration=None):
     # TODO(Cthuloops): We need to add the app.routes here as blueprints
     # https://flask.palletsprojects.com/en/stable/tutorial/views/
 
+
+    # Initialize database first
+    from .database import init_app 
+    try:
+        init_app(app)
+    except Exception as e:
+        print(f"{e}")
+
     # Add the index to the app.
     from . import home
     app.register_blueprint(home.bp)
@@ -73,10 +81,8 @@ def create_app(test_configuration=None):
     from . import cards
     app.register_blueprint(cards.bp)
 
-    from .database import init_app 
-    try:
-        init_app(app)
-    except Exception as e:
-        print(f"{e}")
+    # Import blog bp
+    from . import blog
+    app.register_blueprint(blog.bp)
 
     return app
