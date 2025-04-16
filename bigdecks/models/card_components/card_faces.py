@@ -22,7 +22,6 @@ class CardFace():
     - colors
     - defense
     - flavor_text
-    - illustration_id
     - image_uris
     - layout
     - loyalty
@@ -131,19 +130,12 @@ class CardFace():
         Returns
         -------
         str | None
-            str, if this card has defense.
+            str, if this card face has defense.
             None, otherwise.
         """
-        if conn is None:
-            conn = get_db_connection("cards")
-        row = conn.execute(
-            """
-            SELECT defense
-            FROM card_faces
-            WHERE id = ?;
-            """,
-            (self.id,)).fetchone()
-        return row["defense"] if "defense" in row.keys() else None
+        from bigdecks.services.card_service import CardService
+        defense = CardService.get_defense(self.id, "card_face", conn)
+        return defense
 
     @property
     def flavor_text(self) -> str | None:
@@ -157,31 +149,6 @@ class CardFace():
         """
         assert isinstance(self.__flavor_text, (str | None))
         return self.__flavor_text
-
-    @property
-    def illustration_id(self,
-                        conn: sqlite3.Connection | None = None) -> str | None:
-        """Get the illustration ID for this card face's art.
-
-        Returns
-        -------
-        str | None
-        """
-        if conn is None:
-            conn = get_db_connection("cards")
-        row = conn.execute(
-            """
-            SELECT illustration_id
-            FROM card_faces
-            WHERE id = ?;
-            """,
-            (self.id,)).fetchone()
-        if "illustration_id" in row.keys():
-            result = row["illustration_id"]
-        else:
-            result = None
-
-        return result
 
     @property
     def image_uris(self) -> ImageUris:
@@ -213,16 +180,9 @@ class CardFace():
         -------
         str | None
         """
-        if conn is None:
-            conn = get_db_connection("cards")
-        row = conn.execute(
-            """
-            SELECT loyalty
-            FROM card_faces
-            WHERE core_id = ?;
-            """,
-            (self.id,)).fetchone()
-        return row["loyalty"] if "loyalty" in row.keys() else None
+        from bigdecks.services.card_service import CardService
+        loyalty = CardService.get_loyalty(self.id, "card_face", conn)
+        return loyalty
 
     @property
     def mana_cost(self) -> str:
@@ -267,71 +227,6 @@ class CardFace():
         """
         assert isinstance(self.__power, (str | None))
         return self.__power
-
-    @property
-    def printed_name(self,
-                     conn: sqlite3.Connection | None = None) -> str | None:
-        """Get the localized name for this card face.
-
-        Returns
-        -------
-        str | None
-        """
-        if conn is None:
-            conn = get_db_connection("cards")
-        row = conn.execute(
-            """
-            SELECT printed_name
-            FROM card_faces
-            WHERE id = ?;
-            """,
-            (self.id,)).fetchone()
-        return row["printed_name"] if "printed_name" in row.keys() else None
-
-    @property
-    def printed_text(self,
-                     conn: sqlite3.Connection | None = None) -> str | None:
-        """Get the localized oracle text for this card face.
-
-        Returns
-        -------
-        str | None
-        """
-        if conn is None:
-            conn = get_db_connection("cards")
-        row = conn.execute(
-            """
-            SELECT printed_text
-            FROM card_faces
-            WHERE id = ?;
-            """,
-            (self.id,)).fetchone()
-        return row["printed_text"] if "printed_text" in row.keys() else None
-
-    @property
-    def printed_type_line(self, conn: sqlite3.Connection | None = None
-                          ) -> str | None:
-        """Get the localized type line for this card face.
-
-        Returns
-        -------
-        str | None
-        """
-        if conn is None:
-            conn = get_db_connection("cards")
-        row = conn.execute(
-            """
-            SELECT printed_type_line
-            FROM card_faces
-            WHERE id = ?;
-            """,
-            (self.id,)).fetchone()
-
-        if "printed_type_line" in row.keys():
-            result = row["printed_type_line"]
-        else:
-            result = None
-        return result
 
     @property
     def toughness(self) -> str | None:
@@ -398,14 +293,7 @@ class CardFace():
     def get_card_faces(cls, parent: Card,
                        conn: sqlite3.Connection | None = None
                        ) -> list[CardFace]:
-        """Instantiates a CardFace object"""
-        if conn is None:
-            conn = get_db_connection("cards")
-        rows = conn.execute(
-            """
-            SELECT *
-            FROM card_faces
-            WHERE core_id = ?
-            """,
-            (parent.scryfall_id,)).fetchall()
+        """Instantiates CardFace objects"""
+        from bigdecks.services.card_service import CardService
+        rows = CardService.get_card_faces(parent.scryfall_id, conn)
         return [CardFace(dict(row), parent) for row in rows]
