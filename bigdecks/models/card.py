@@ -46,20 +46,18 @@ class Card:
     - name
     - oracle text
     - power
+    - produced_mana
     - toughness
     - type_line
     - super_type
     - card_type
     - sub_type
     - collector_number
-    - flavor_name **
+    - flavor_name
     - flavor_text
     - game_availability
     - image_uris
     - prices
-    - printed_name **
-    - printed_text **
-    - printed_type_line **
     - rarity
     - prints
     - set_name
@@ -95,6 +93,8 @@ class Card:
         assert isinstance(self.__keywords, (list | None))
         self.__legality = CardLegalities(row)
         assert isinstance(self.__legality, CardLegalities)
+        self.__mana_cost = row.get("mana_cost")
+        assert isinstance(self.__mana_cost, str | None)
         self.__name = row["name"]
         assert isinstance(self.__name, str)
         self.__oracle_text = row.get("oracle_text")
@@ -201,7 +201,7 @@ class Card:
         return self.__scryfall_id
 
     @property
-    def arena_id(self) -> int | None:
+    def arena_id(self, conn: sqlite3.Connection | None = None) -> int | None:
         """The arena id of this card, if it exists.
 
         Returns
@@ -214,7 +214,8 @@ class Card:
             arena_id = None
         else:
             from bigdecks.services.card_service import CardService
-            arena_id = CardService.get_arena_id(self.id)
+            arena_id = CardService.get_arena_id(self.id, conn)
+            assert isinstance(arena_id, int)
         return arena_id
 
     @property
@@ -353,17 +354,8 @@ class Card:
         -------
         str
         """
-        assert isinstance(conn, (sqlite3.Connection | None))
-        if not conn:
-            conn = get_db_connection("cards")
-
-        defense = conn.execute(
-            """
-            SELECT defense
-            FROM core
-            WHERE id = ?;
-            """,
-            (self.id,)).fetchone()
+        from bigdecks.services.card_service import CardService
+        defense = CardService.get_defense(self.id, conn)
         assert isinstance(defense, str)
         return defense
 
@@ -380,20 +372,9 @@ class Card:
         -------
         bool
         """
-        assert isinstance(conn, (sqlite3.Connection | None))
-
-        if not conn:
-            conn = get_db_connection("cards")
-
-        game_changer = conn.execute(
-            """
-            SELECT game_changer
-            FROM core
-            WHERE id = ?;
-            """,
-            (self.id,)).fetchone()
-        game_changer = bool(game_changer)
-
+        from bigdecks.services.card_service import CardService
+        game_changer = CardService.get_game_changer(self.id, conn)
+        assert isinstance(game_changer, bool)
         return game_changer
 
     @property
@@ -411,24 +392,13 @@ class Card:
             str, if this card has a loyalty value.
             None otherwise.
         """
-        assert isinstance(conn, (sqlite3.Connection | None))
-
-        if not conn:
-            conn = get_db_connection("cards")
-
-        loyalty = conn.execute(
-            """
-            SELECT loyalty
-            FROM core
-            WHERE id = ?;
-            """,
-            (self.id,)).fetchone()
-
+        from bigdecks.services.card_service import CardService
+        loyalty = CardService.get_loyalty(self.id, "card", conn)
         assert isinstance(loyalty, (str | None))
         return loyalty
 
     @property
-    def mana_cost(self, conn: sqlite3.Connection | None = None) -> str | None:
+    def mana_cost(self) -> str | None:
         """Get the mana cost for this card.
 
         Parameters
@@ -442,21 +412,8 @@ class Card:
             str, if this card has a mana cost.
             None otherwise.
         """
-        assert isinstance(conn, (sqlite3.Connection | None))
-
-        if not conn:
-            conn = get_db_connection("cards")
-
-        mana_cost = conn.execute(
-            """
-            SELECT mana_cost
-            FROM core
-            WHERE id = ?;
-            """,
-            (self.id,)).fetchone()
-
-        assert isinstance(mana_cost, (str | None))
-        return mana_cost
+        assert isinstance(self.__mana_cost, (str | None))
+        return self.__mana_cost
 
     @property
     def keywords(self) -> list[str] | None:
@@ -513,6 +470,29 @@ class Card:
         """
         assert isinstance(self.__power, (str | None))
         return self.__power
+
+    @property
+    def produced_mana(self,
+                      conn: sqlite3.Connection | None = None) -> Colors | None:
+        """Get the colors of the mana produced by this card.
+
+        Parameters
+        ----------
+        conn: sqlite3.Connection | None
+            Connection to 'cards' database.
+
+        Returns
+        -------
+        Colors | None
+            Colors, if card produces mana.
+            None, otherwise.
+        """
+        from bigdecks.services.card_service import CardService
+        produced_mana = CardService.get_produced_mana(self.id, conn)
+        if produced_mana is not None:
+            produced_mana = self._get_colors(produced_mana)
+
+        return produced_mana
 
     @property
     def toughness(self) -> str | None:
@@ -588,9 +568,17 @@ class Card:
         return self.__collector_number
 
     @property
-    def flavor_name(self) -> str | None:
-        # from bigdecks.service
-        ...
+    def flavor_name(self,
+                    conn: sqlite3.Connection | None = None) -> str | None:
+        """Get the flavor name for this card.
+
+        Returns
+        -------
+        str | None
+        """
+        from bigdecks.services.card_service import CardService
+        flavor_name = CardService.get_flavor_name(self.id, "card", conn)
+        return flavor_name
 
     @property
     def flavor_text(self) -> str | None:
@@ -700,8 +688,6 @@ class Card:
 
         Parameters
         ----------
-        row: dict[str, object]
-            A row from the cards database core table converted to a dict.
         field: str
             json array
 
@@ -800,8 +786,10 @@ class Card:
         else:
             prints = []
             for row in rows:
-                prints.append({"scryfall_id": row["scryfall_id"],
+                prints.append({"id": row["id"],
                                "set_name": row["set_name"],
+                               "set_code": row["set_code"],
+                               "collector_number": row["collector_number"],
                                "images": ImageUris(dict(row))})
 
         return prints
