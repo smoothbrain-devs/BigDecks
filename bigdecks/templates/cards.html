@@ -8,7 +8,11 @@
     <div class="container-fluid">
         <article class="card">
             <header class="card-header">
+                {% if card.flavor_name %}
+                <h2>{{ card.flavor_name }}</h2>
+                {% else %}
                 <h2>{{ card.name }}</h2>
+                {% endif %}
             </header>
             <div class="row">
                 <div id="image" class="col">
