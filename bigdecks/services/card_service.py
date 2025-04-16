@@ -55,7 +55,7 @@ class CardService:
         """
 
     @classmethod
-    def get_random_card(cls, conn: sqlite3.Connection | None = None) -> Card:
+    def get_random_card(cls, conn: sqlite3.Connection | None = None) -> "Card":
         """Get a random card from the core table.
 
         Parameters
@@ -80,7 +80,7 @@ class CardService:
     @classmethod
     def get_card_by_scryfall_id(cls, scryfall_id: str,
                                 conn: sqlite3.Connection | None = None
-                                ) -> Card:
+                                ) -> "Card":
         """Get a card by it's scryfall id.
 
         Parameters
