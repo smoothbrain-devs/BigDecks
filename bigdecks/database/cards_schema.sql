@@ -10,8 +10,8 @@ CREATE TABLE IF NOT EXISTS core (
     rulings_uri TEXT,
     scryfall_uri TEXT,  -- Link to scryfall page for the card.
     uri TEXT,  -- Link to download the card object from scryfall api.
-    all_parts BOOLEAN, -- If true, corresponding entries in all_parts table.
-    card_faces BOOLEAN,  -- If true, corresponding entries in card_faces table.
+    all_parts BOOLEAN NOT NULL, -- If true, corresponding entries in all_parts table.
+    card_faces BOOLEAN NOT NULL,  -- If true, corresponding entries in card_faces table.
     cmc REAL NOT NULL,
     color_identity TEXT NOT NULL,  -- JSON Colors array (strings or empty).
     color_indicator TEXT,  -- JSON Colors array.
@@ -50,10 +50,13 @@ CREATE TABLE IF NOT EXISTS core (
     name NOT NULL,
     oracle_text TEXT,
     power TEXT,
-    produced_mana TEXT, JSON Colors array,
+    produced_mana TEXT, -- JSON Colors array,
     reserved BOOLEAN NOT NULL,
     toughness TEXT,
     type_line TEXT NOT NULL,
+    supertype TEXT, -- JSON Array of strings. (May only be 1)
+    cardtype TEXT, -- JSON Array of strings. (May only be 1)
+    subtype TEXT,  -- JSON Array of strings. (May only be 1)
     artist TEXT,
     artist_ids TEXT,  -- JSON Array of strings.
     attraction_lights TEXT,  -- JSON Array of strings.
@@ -130,6 +133,9 @@ CREATE TABLE IF NOT EXISTS all_parts (
     component TEXT NOT NULL,  -- What role this card plays in the relationship (e.g. token)
     name TEXT NOT NULL,
     type_line TEXT NOT NULL,
+    supertype TEXT, -- JSON Array of strings. (May only be 1)
+    cardtype TEXT, -- JSON Array of strings. (May only be 1)
+    subtype TEXT, -- JSON Array of strings. (May only be 1)
     uri TEXT NOT NULL,  -- URI for card object
     FOREIGN KEY(core_id) REFERENCES core(scryfall_id)
 );
@@ -165,6 +171,9 @@ CREATE TABLE IF NOT EXISTS card_faces (
     printed_type_line TEXT,  -- Localized type line
     toughness TEXT,
     type_line TEXT,
+    supertype TEXT, -- JSON Array of strings. (May only be 1)
+    cardtype TEXT, -- JSON Array of strings. (May only be 1)
+    subtype TEXT, -- JSON Array of strings. (May only be 1)
     watermark TEXT,
     FOREIGN KEY(core_id) REFERENCES core(scryfall_id)
 );

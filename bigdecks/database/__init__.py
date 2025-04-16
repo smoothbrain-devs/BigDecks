@@ -26,14 +26,16 @@ def init_app(app: Flask):
     app: Flask
         The Flask app instance.
     """
-    # Create the users and cards databases
-    with app.app_context():
-        for db in ["users", "cards"]:
-            init_db(db)
+    database_path = os.path.join(app.instance_path, "database")
+    try:
+        os.makedirs(os.path.join(database_path), exist_ok=True)
+    except OSError as e:
+        click.echo(f"Could not create database directory: {e}")
 
     # Create the users and cards databases
+    dbs = ["users", "cards"]
     with app.app_context():
-        for db in ["users", "cards"]:
+        for db in dbs:
             init_db(db)
 
     # Register the teardown function to close database connections
@@ -61,6 +63,7 @@ def init_db(db_name: str) -> None:
         click.echo(f"Creating the {db_name} database")
         if db_name in ["users", "cards"]:
             schema_path = os.path.join("database", f"{db_name}_schema.sql")
+
         conn = get_db_connection(db_name)
 
         if schema_path is not None:
@@ -68,12 +71,12 @@ def init_db(db_name: str) -> None:
                 try:
                     conn.executescript(f.read().decode("utf8"))
                 except Exception as e:
-                    print(f"Error occurred in {db_name}_schema.sql:")
-                    print("\t", e)
+                    click.echo(f"Error occurred in {db_name}_schema.sql:",
+                               err=True)
+                    click.echo(f"\t{e}", err=True)
         else:
             raise FileNotFoundError(f"{schema_path} does not exist")
-    else:
-        raise FileNotFoundError(f"{db_name} does not exist.")
+        conn.commit()
 
 
 def get_db_connection(db_name: str) -> sqlite3.Connection:
