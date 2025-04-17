@@ -64,69 +64,70 @@ class Card:
     - set_code
     """
 
-    def __init__(self, row: dict[str, object],
+    def __init__(self, row: sqlite3.Row,
                  conn: sqlite3.Connection | None = None):
         """
         Parameters
         ----------
-        row: dict[str, object]
-            A row from the cards database core table converted to a dict.
+        row: sqlite3.Row
+            A row from the cards database core table.
         """
-        assert isinstance(row, dict)
-        self.__id = row["id"]
+        assert isinstance(row, sqlite3.Row)
+        d_row = dict(row)
+        self.__id = d_row["id"]
         assert isinstance(self.__id, int)
-        self.__scryfall_id = row["scryfall_id"]
+        self.__scryfall_id = d_row["scryfall_id"]
         assert isinstance(self.__scryfall_id, str)
-        self.__layout = row["layout"]
+        self.__layout = d_row["layout"]
         assert isinstance(self.__layout, str)
-        self.__has_related_parts = bool(row["all_parts"])
+        self.__has_related_parts = bool(d_row["all_parts"])
         assert isinstance(self.__has_related_parts, bool)
-        self.__has_card_faces = bool(row["card_faces"])
+        self.__has_card_faces = bool(d_row["card_faces"])
         assert isinstance(self.__has_card_faces, bool)
-        self.__cmc = row["cmc"]
+        self.__cmc = d_row["cmc"]
         assert isinstance(self.__cmc, float)
-        self.__color_identity = self._get_colors(row["color_identity"])
+        self.__color_identity = self._get_colors(d_row["color_identity"])
         assert isinstance(self.__color_identity, Colors)
-        self.__colors = self._get_colors(row.get("colors"))
+        self.__colors = self._get_colors(d_row.get("colors"))
         assert isinstance(self.__colors, (Colors | None))
-        self.__keywords = self._parse_json_array(row["keywords"])
+        self.__keywords = self._parse_json_array(d_row["keywords"])
         assert isinstance(self.__keywords, (list | None))
-        self.__legality = CardLegalities(row)
+        self.__legality = CardLegalities(d_row)
         assert isinstance(self.__legality, CardLegalities)
-        self.__mana_cost = row.get("mana_cost")
+        self.__mana_cost = d_row.get("mana_cost")
         assert isinstance(self.__mana_cost, str | None)
-        self.__name = row["name"]
+        self.__name = d_row["name"]
         assert isinstance(self.__name, str)
-        self.__oracle_text = row.get("oracle_text")
+        self.__oracle_text = d_row.get("oracle_text")
         assert isinstance(self.__oracle_text, (str | None))
-        self.__power = row.get("power")
+        self.__power = d_row.get("power")
         assert isinstance(self.__power, (str | None))
-        self.__toughness = row.get("toughness")
+        self.__toughness = d_row.get("toughness")
         assert isinstance(self.__toughness, (str | None))
-        self.__type_line = row["type_line"]
+        self.__type_line = d_row["type_line"]
         assert isinstance(self.__type_line, str)
-        self.__supertype = self._parse_json_array(row["supertype"])
+        self.__supertype = self._parse_json_array(d_row["supertype"])
         assert isinstance(self.__supertype, (list | None))
-        self.__cardtype = self._parse_json_array(row["cardtype"])
+        self.__cardtype = self._parse_json_array(d_row["cardtype"])
         assert isinstance(self.__cardtype, (list | None))
-        self.__subtype = self._parse_json_array(row["subtype"])
+        self.__subtype = self._parse_json_array(d_row["subtype"])
         assert isinstance(self.__subtype, (list | None))
-        self.__collector_number = row["collector_number"]
+        self.__collector_number = d_row["collector_number"]
         assert isinstance(self.__collector_number, str)
-        self.__flavor_text = row.get("flavor_text")
+        self.__flavor_text = d_row.get("flavor_text")
         assert isinstance(self.__flavor_text, (str | None))
-        self.__game_availability = self.__get_game_availability(row)
+        self.__game_availability = self.__get_game_availability(d_row)
         assert isinstance(self.__game_availability, GameAvailability)
-        self.__image_uris = ImageUris(row)
+        self.__image_uris = ImageUris(d_row)
         assert isinstance(self.__image_uris, ImageUris)
-        self.__prices = Prices(row)
+        self.__prices = Prices(d_row)
         assert isinstance(self.__prices, Prices)
-        self.__rarity = self.__get_rarity(row)
+        self.__rarity = self.__get_rarity(d_row)
         assert isinstance(self.__rarity, (Rarity | None))
         self.__prints = self.__get_other_prints(conn)
-        self.__set_name = row["set_name"]
+        self.__set_name = d_row["set_name"]
         assert isinstance(self.__set_name, str)
-        self.__set_code = row["set_code"]
+        self.__set_code = d_row["set_code"]
         assert isinstance(self.__set_code, str)
 
         # Doing these at the bottom since it relies on some of the other
@@ -722,24 +723,24 @@ class Card:
         return colors
 
     def __get_game_availability(self,
-                                row: dict[str, object]) -> GameAvailability:
+                                d_row: dict[str, object]) -> GameAvailability:
         """Returns a GameAvailabilty enum based on where the card is
         available.
         """
         availability = GameAvailability(0)
 
-        if bool(row["paper"]):
+        if bool(d_row["paper"]):
             availability |= GameAvailability.paper
-        if bool(row["arena"]):
+        if bool(d_row["arena"]):
             availability |= GameAvailability.arena
-        if bool(row["mtgo"]):
+        if bool(d_row["mtgo"]):
             availability |= GameAvailability.mtgo
 
         return availability
 
-    def __get_rarity(self, row: dict[str, object]) -> Rarity | None:
+    def __get_rarity(self, d_row: dict[str, object]) -> Rarity | None:
         """Returns rarity enum or None based on the card rarity."""
-        match row.get("rarity"):
+        match d_row.get("rarity"):
             case "common":
                 rarity = Rarity.common
 
@@ -785,12 +786,12 @@ class Card:
 
         else:
             prints = []
-            for row in rows:
-                prints.append({"id": row["id"],
-                               "set_name": row["set_name"],
-                               "set_code": row["set_code"],
-                               "collector_number": row["collector_number"],
-                               "images": ImageUris(dict(row))})
+            for d_row in rows:
+                prints.append({"id": d_row["id"],
+                               "set_name": d_row["set_name"],
+                               "set_code": d_row["set_code"],
+                               "collector_number": d_row["collector_number"],
+                               "images": ImageUris(dict(d_row))})
 
         return prints
 
