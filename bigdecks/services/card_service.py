@@ -22,8 +22,9 @@ class CardService:
         """
     _SELECT_CARD_FACES = """
         SELECT id, cmc, color_indicator, colors, defense, flavor_text,
-        image_uris, layout, loyalty, mana_cost, name, oracle_text, power,
-        toughness, type_line, supertype, cardtype, subtype
+        png, border_crop, art_crop, large, normal, small, layout, loyalty,
+        mana_cost, name, oracle_text, power, toughness, type_line, supertype,
+        cardtype, subtype
         """
 
     _SELECT_ARENA_ID = "SELECT arena_id"
