@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Report Match Result{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h2 class="h5 mb-0">{{ player1['username'] }} vs. {{ player2['username'] }}</h2>
+        </div>
+        <div class="card-body">
+          <form method="post">
+            <div class="row mb-4">
+              <div class="col-md-5 text-center">
+                <h3 class="h6">{{ player1['username'] }}</h3>
+                <div class="input-group">
+                  <span class="input-group-text">Wins</span>
+                  <input type="number" class="form-control" name="player1_wins" min="0" max="2" 
+                         value="{{ match['player1_wins'] or '0' }}" required>
+                </div>
+              </div>
+              
+              <div class="col-md-2 text-center d-flex flex-column justify-content-end">
+                <h4 class="h6 mb-2">Draws</h4>
+                <input type="number" class="form-control" name="draws" min="0" max="5" 
+                       value="{{ match['draws'] or '0' }}" required>
+              </div>
+              
+              <div class="col-md-5 text-center">
+                <h3 class="h6">{{ player2['username'] }}</h3>
+                <div class="input-group">
+                  <span class="input-group-text">Wins</span>
+                  <input type="number" class="form-control" name="player2_wins" min="0" max="2" 
+                         value="{{ match['player2_wins'] or '0' }}" required>
+                </div>
+              </div>
+            </div>
+            
+            <div class="row">
+              <div class="col-12 text-center">
+                <p class="text-muted">Most matches are played as best-of-3 games.</p>
+              </div>
+            </div>
+            
+            <div class="d-flex justify-content-between mt-3">
+              <a href="{{ url_for('tournament.pairings', id=match['tournament_id']) }}" class="btn btn-secondary">Cancel</a>
+              <button type="submit" class="btn btn-primary">Submit Result</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

@@ -85,4 +85,9 @@ def create_app(test_configuration=None):
     from . import blog
     app.register_blueprint(blog.bp)
 
+    # Import tournament bp
+    from . import tournament
+    app.register_blueprint(tournament.bp)
+    app.add_url_rule('/tournament', endpoint='tournament.index', view_func=tournament.index)
+
     return app

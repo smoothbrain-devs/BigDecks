@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Create Tournament{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h2 class="h5 mb-0">Tournament Details</h2>
+        </div>
+        <div class="card-body">
+          <form method="post">
+            <div class="mb-3">
+              <label for="name" class="form-label">Tournament Name</label>
+              <input type="text" class="form-control" id="name" name="name" required 
+                     value="{{ request.form['name'] }}" placeholder="e.g., Friday Night Magic">
+            </div>
+            
+            <div class="mb-3">
+              <label for="description" class="form-label">Description</label>
+              <textarea class="form-control" id="description" name="description" rows="3" 
+                        placeholder="Tournament details, prizes, special rules, etc.">{{ request.form['description'] }}</textarea>
+            </div>
+            
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="format" class="form-label">Format</label>
+                <select class="form-select" id="format" name="format" required>
+                  <option value="" disabled {% if not request.form['format'] %}selected{% endif %}>Select a format</option>
+                  <option value="standard" {% if request.form['format'] == 'standard' %}selected{% endif %}>Standard</option>
+                  <option value="modern" {% if request.form['format'] == 'modern' %}selected{% endif %}>Modern</option>
+                  <option value="commander" {% if request.form['format'] == 'commander' %}selected{% endif %}>Commander</option>
+                  <option value="legacy" {% if request.form['format'] == 'legacy' %}selected{% endif %}>Legacy</option>
+                  <option value="vintage" {% if request.form['format'] == 'vintage' %}selected{% endif %}>Vintage</option>
+                  <option value="pauper" {% if request.form['format'] == 'pauper' %}selected{% endif %}>Pauper</option>
+                  <option value="pioneer" {% if request.form['format'] == 'pioneer' %}selected{% endif %}>Pioneer</option>
+                  <option value="draft" {% if request.form['format'] == 'draft' %}selected{% endif %}>Draft</option>
+                  <option value="sealed" {% if request.form['format'] == 'sealed' %}selected{% endif %}>Sealed</option>
+                  <option value="other" {% if request.form['format'] == 'other' %}selected{% endif %}>Other</option>
+                </select>
+              </div>
+              
+              <div class="col-md-6 mb-3">
+                <label for="date" class="form-label">Date</label>
+                <input type="date" class="form-control" id="date" name="date" required 
+                       value="{{ request.form['date'] }}">
+              </div>
+            </div>
+            
+            <div class="mb-3">
+              <label for="max_players" class="form-label">Maximum Players</label>
+              <input type="number" class="form-control" id="max_players" name="max_players" 
+                     min="2" max="128" value="{{ request.form['max_players'] or '8' }}">
+              <div class="form-text">Number must be even for Swiss pairings to work properly.</div>
+            </div>
+            
+            <div class="d-grid">
+              <button type="submit" class="btn btn-primary">Create Tournament</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

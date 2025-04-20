@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <div class="d-flex justify-content-between align-items-center">
+    <h1>{% block title %}Pairings: {{ tournament['name'] }}{% endblock %}</h1>
+    
+    {% if is_organizer and tournament['status'] == 'in_progress' %}
+      <form action="{{ url_for('tournament.generate_pairings', id=tournament['id']) }}" method="post">
+        <button type="submit" class="btn btn-success">Generate Next Round</button>
+      </form>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block content %}
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h2 class="h5 mb-0">Tournament Status</h2>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>Format:</strong> {{ tournament['format'] }}</p>
+              <p><strong>Date:</strong> {{ tournament['date'] }}</p>
+              <p><strong>Organizer:</strong> {{ tournament['organizer_name'] }}</p>
+            </div>
+            <div class="col-md-6">
+              <p><strong>Status:</strong> 
+                <span class="badge bg-{% if tournament['status'] == 'registration' %}success{% elif tournament['status'] == 'in_progress' %}warning{% else %}secondary{% endif %}">
+                  {{ tournament['status'] | capitalize }}
+                </span>
+              </p>
+              <p><strong>Total Players:</strong> {{ tournament['participants_count'] }}</p>
+              <p><strong>Current Round:</strong> 
+                {% set max_round = 0 %}
+                {% for match in matches %}
+                  {% if match['round'] > max_round %}
+                    {% set max_round = match['round'] %}
+                  {% endif %}
+                {% endfor %}
+                {{ max_round }}
+              </p>
+            </div>
+          </div>
+          <div class="mt-3">
+            <a href="{{ url_for('tournament.details', id=tournament['id']) }}" class="btn btn-outline-primary">Back to Tournament Details</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if matches %}
+    {% set current_round = 0 %}
+    {% for match in matches|sort(attribute='round', reverse=true) %}
+      {% if match['round'] != current_round %}
+        {% set current_round = match['round'] %}
+        {% if not loop.first %}</div></div>{% endif %}
+        <div class="row mb-4">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-header bg-info text-white">
+                <h3 class="h5 mb-0">Round {{ current_round }} Pairings</h3>
+              </div>
+              <div class="list-group list-group-flush">
+      {% endif %}
+      
+      <div class="list-group-item">
+        <div class="row align-items-center">
+          <div class="col-md-6">
+            <div class="d-flex justify-content-between">
+              <span class="fw-bold">{{ match['player1_name'] }}</span>
+              <span class="text-center">
+                {% if match['status'] == 'completed' %}
+                  <span class="badge bg-primary">{{ match['player1_wins'] }}</span>
+                {% endif %}
+              </span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="d-flex justify-content-between">
+              <span class="text-center">
+                {% if match['status'] == 'completed' %}
+                  <span class="badge bg-primary">{{ match['player2_wins'] }}</span>
+                {% endif %}
+              </span>
+              <span class="fw-bold">{{ match['player2_name'] }}</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="row mt-2">
+          <div class="col-12 text-center">
+            {% if match['status'] == 'completed' %}
+              <span class="text-muted">
+                Result: 
+                {% if match['player1_wins'] > match['player2_wins'] %}
+                  {{ match['player1_name'] }} Won ({{ match['player1_wins']}-{{ match['player2_wins'] }})
+                {% elif match['player2_wins'] > match['player1_wins'] %}
+                  {{ match['player2_name'] }} Won ({{ match['player2_wins']}-{{ match['player1_wins'] }})
+                {% else %}
+                  Draw
+                {% endif %}
+                {% if match['draws'] > 0 %}
+                  with {{ match['draws'] }} draw(s)
+                {% endif %}
+              </span>
+            {% elif match['status'] == 'in_progress' %}
+              <a href="{{ url_for('tournament.report_result', match_id=match['id']) }}" class="btn btn-sm btn-primary">Report Result</a>
+            {% else %}
+              <span class="badge bg-secondary">Pending</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      
+      {% if loop.last %}</div></div>{% endif %}
+    {% endfor %}
+  {% else %}
+    <div class="alert alert-info">
+      No pairings generated yet. {% if is_organizer %}Use the "Generate Next Round" button to create pairings.{% endif %}
+    </div>
+  {% endif %}
+{% endblock %}

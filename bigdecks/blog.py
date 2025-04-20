@@ -13,10 +13,6 @@ def index():
     # Connect to users database
     db = get_db_connection('users')
     
-    # Check if post table exists, if not, create it directly
-    db.execute("CREATE TABLE IF NOT EXISTS post (id INTEGER PRIMARY KEY AUTOINCREMENT, author_id INTEGER NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL, created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (author_id) REFERENCES user (id))")
-    db.commit()
-    
     # Try to get all posts (may be empty if no posts yet)
     try:
         posts = db.execute(
@@ -66,10 +62,6 @@ def create():
 
 def get_post(id, check_author=True):
     db = get_db_connection('users')
-    
-    # Ensure post table exists
-    db.execute("CREATE TABLE IF NOT EXISTS post (id INTEGER PRIMARY KEY AUTOINCREMENT, author_id INTEGER NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL, created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (author_id) REFERENCES user (id))")
-    db.commit()
     
     post = db.execute(
         'SELECT p.id, title, body, created, author_id, username'

@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <div class="d-flex justify-content-between align-items-center">
+    <h1>{% block title %}{{ tournament['name'] }}{% endblock %}</h1>
+    
+    {% if g.user and g.user['id'] == tournament['organizer_id'] %}
+      <div>
+        <a href="{{ url_for('tournament.update', id=tournament['id']) }}" class="btn btn-primary">Edit Tournament</a>
+        <a href="{{ url_for('tournament.pairings', id=tournament['id']) }}" class="btn btn-success">Manage Pairings</a>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block content %}
+  <div class="row mb-4">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h2 class="h5 mb-0">Tournament Information</h2>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <h3 class="h5">Details</h3>
+            <div class="row">
+              <div class="col-md-6">
+                <p><strong>Format:</strong> {{ tournament['format'] }}</p>
+                <p><strong>Date:</strong> {{ tournament['date'] }}</p>
+                <p><strong>Status:</strong> <span class="badge bg-{% if tournament['status'] == 'registration' %}success{% elif tournament['status'] == 'in_progress' %}warning{% else %}secondary{% endif %}">{{ tournament['status'] | capitalize }}</span></p>
+              </div>
+              <div class="col-md-6">
+                <p><strong>Maximum Players:</strong> {{ tournament['max_players'] }}</p>
+                <p><strong>Current Players:</strong> {{ participants|length }}</p>
+                <p><strong>Organizer:</strong> {{ tournament['organizer_name'] }}</p>
+              </div>
+            </div>
+          </div>
+          
+          {% if tournament['description'] %}
+          <div class="mb-3">
+            <h3 class="h5">Description</h3>
+            <p>{{ tournament['description'] }}</p>
+          </div>
+          {% endif %}
+          
+          {% if g.user %}
+            {% set is_registered = false %}
+            {% for participant in participants %}
+              {% if participant['user_id'] == g.user['id'] %}
+                {% set is_registered = true %}
+              {% endif %}
+            {% endfor %}
+            
+            {% if tournament['status'] == 'registration' %}
+              {% if not is_registered and participants|length < tournament['max_players'] %}
+                <form action="{{ url_for('tournament.register', id=tournament['id']) }}" method="post">
+                  <button type="submit" class="btn btn-primary">Register for Tournament</button>
+                </form>
+              {% elif is_registered %}
+                <form action="{{ url_for('tournament.withdraw', id=tournament['id']) }}" method="post">
+                  <button type="submit" class="btn btn-danger">Withdraw from Tournament</button>
+                </form>
+              {% else %}
+                <p class="text-danger">This tournament is full.</p>
+              {% endif %}
+            {% endif %}
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header bg-info text-white">
+          <h2 class="h5 mb-0">Participants</h2>
+        </div>
+        <div class="card-body">
+          {% if participants %}
+            <ul class="list-group">
+              {% for participant in participants %}
+                <li class="list-group-item">{{ participant['username'] }}</li>
+              {% endfor %}
+            </ul>
+            <p class="mt-2 text-muted">{{ participants|length }} / {{ tournament['max_players'] }} registered</p>
+          {% else %}
+            <p class="text-muted">No participants registered yet.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  {% if tournament['status'] != 'registration' %}
+    <div class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header bg-success text-white">
+            <h2 class="h5 mb-0">Matches</h2>
+          </div>
+          <div class="card-body">
+            <a href="{{ url_for('tournament.pairings', id=tournament['id']) }}" class="btn btn-outline-primary">
+              View Pairings and Results
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

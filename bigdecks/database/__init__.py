@@ -32,13 +32,11 @@ def init_app(app: Flask):
 
     # Create the users and cards databases
     with app.app_context():
-        for db in ["users", "cards", "post"]:
+        for db in ["users", "cards"]:
             try:
                 init_db(db)
             except Exception as e:
                 click.echo(f"Error initializing {db} database: {e}")
-
-    # Duplicate Code?
 
     # Create the users and cards databases
     #with app.app_context():
@@ -71,7 +69,7 @@ def init_db(db_name: str) -> None:
 
     if not db_exists:
         click.echo(f"Creating the {db_name} database")
-        if db_name in ["users", "cards", "post"]:
+        if db_name in ["users", "cards"]:
             schema_path = os.path.join("database", f"{db_name}_schema.sql")
         conn = get_db_connection(db_name)
 
@@ -92,6 +90,39 @@ def init_db(db_name: str) -> None:
             raise FileNotFoundError(f"{db_name} does not exist.")
     else:
         pass
+
+    if db_name == "users":
+        conn = get_db_connection(db_name)
+
+        tournament_schema_path = os.path.join("database", "tournament_schema.sql")
+        full_tournament_schema_path = os.path.join(current_app.root_path, tournament_schema_path)
+        
+        if os.path.exists(full_tournament_schema_path):
+            with current_app.open_resource(tournament_schema_path) as f:
+                try:
+                    conn.executescript(f.read().decode("utf8"))
+                    conn.commit()
+                    click.echo("Tournament schema applied to users database.")
+                except Exception as e:
+                    print(f"Error occurred in tournament_schema.sql:")
+                    print("\t", e)
+        else:
+            click.echo(f"Warning: {tournament_schema_path} does not exist. Tournament functionality may be limited.")
+
+        post_schema_path = os.path.join("database", "post_schema.sql")
+        full_post_schema_path = os.path.join(current_app.root_path, post_schema_path)
+        
+        if os.path.exists(full_post_schema_path):
+            with current_app.open_resource(post_schema_path) as f:
+                try:
+                    conn.executescript(f.read().decode("utf8"))
+                    conn.commit()
+                    click.echo("Post schema applied to users database.")
+                except Exception as e:
+                    print(f"Error occurred in post_schema.sql:")
+                    print("\t", e)
+        else:
+            click.echo(f"Warning: {post_schema_path} does not exist. Blog functionality may be limited.")
 
 
 
