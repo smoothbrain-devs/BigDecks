@@ -2,7 +2,6 @@
 
 
 from __future__ import annotations
-from bigdecks.database import get_db_connection
 from .card_components.enums import (
     Colors,
     GameAvailability,
@@ -787,11 +786,13 @@ class Card:
         else:
             prints = []
             for d_row in rows:
-                prints.append({"id": d_row["id"],
-                               "set_name": d_row["set_name"],
-                               "set_code": d_row["set_code"],
-                               "collector_number": d_row["collector_number"],
-                               "images": ImageUris(dict(d_row))})
+                # Don't include the current card in the card prints.
+                if self.id != d_row["id"]:
+                    prints.append({"id": d_row["id"],
+                                   "set_name": d_row["set_name"],
+                                   "set_code": d_row["set_code"],
+                                   "collector_number": d_row["collector_number"],
+                                   "images": ImageUris(dict(d_row))})
 
         return prints
 
