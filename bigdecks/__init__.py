@@ -55,6 +55,27 @@ def create_app(test_configuration=None):
         """Make the current year available to all templates"""
         return {'year': datetime.now().year}
 
+    # Create a template filter to encode strings
+    @app.template_filter('urlencode')
+    def urlencode_filter(string: str):
+        """Url encode a string to make it safe for urls
+
+        Parameters
+        ----------
+        string: str
+            The string to encode
+
+        Returns
+        -------
+        quote(string)
+            url encoded version of the string.
+        """
+        from urllib.parse import quote
+
+        if isinstance(string, str):
+            return quote(string)
+        return quote(str(string))
+
     # TODO(Cthuloops): We need to add the app.routes here as blueprints
     # https://flask.palletsprojects.com/en/stable/tutorial/views/
 
@@ -74,6 +95,7 @@ def create_app(test_configuration=None):
     from .database.cards_db import init_app as init_cards_db_app
     init_cards_db_app(app)
 
+    # Register the blueprints
     from . import auth, cards, home
     app.register_blueprint(auth.bp)
     app.register_blueprint(cards.bp)
