@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block header %}
+<h1>{% block title %}Cards{% endblock %}</h1>
+{% endblock %}
+
+
+{% block content %}
+<div class="container-fluid">
+	<article class="card">
+		<header class="card-header">
+			{% if card.flavor_name %}
+			<h2>{{ card.flavor_name }}</h2>
+			{% else %}
+			<h2>{{ card.name }}</h2>
+			{% endif %}
+		</header>
+		<div class="row">
+			<div id="image" class="col">
+				{% if card.has_card_faces %}
+				<img src="{{ card.front_face.image_uris.highest_resolution }}" alt="{{ card.front_face.name }}" class="rounded">
+				<img src="{{ card.back_face.image_uris.highest_resolution }}" alt="{{ card.back_face.name }}" class="rounded">
+				{% endif %}
+				<img src="{{ card.image_uris.highest_resolution }}" alt="{{ card.name }}" class="rounded">
+			</div>
+			<div class="col card-description">
+				<table id="related-parts">
+					<thead>
+						<tr>
+							<th>Related Card Parts</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+						</tr>
+					</tbody>
+				</table>
+
+				{% if card.prints %}
+                <div class="prints-container">
+                    <h4>Other Printings ({{ card.prints|length }})</h4>
+
+                    <div class="scrollable-prints" style="max-height: 210px; overflow-y: auto;">
+                        <ul class="list-group list-group-flush">
+                            {% for print in card.prints %}
+                            <li class="list-group-item">
+                                <a href="{{ url_for('cards.card_by_set_collector',
+                                        set_code=print['set_code'],
+                                        collector_number=print['collector_number'],
+                                        card_name=card.name|urlencode) }}"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-html="true"
+                                        data-bs-placement="right"
+                                        data-bs-title="<img src='{{ print['images'].small }}' class='img-fluid' style='max-width: 175px;'>"
+                                >
+                                {{ print["set_name"] }} #{{ print["collector_number"] }}
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+				{% endif %}
+			</div>
+		</div>
+	</article>
+</div>
+{% endblock %}
