@@ -21,7 +21,7 @@ from .services.card_service import CardService
 bp = Blueprint(name="shop", import_name=__name__)
 
 
-@bp.route("/inventory")
+@bp.route("/shop")
 def inventory():
     """Display the shop inventory with actual card images."""
     # Fetch 15 random cards from the database
