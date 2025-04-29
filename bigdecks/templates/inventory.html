@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block header %}
+    <h1>{% block title %}Shop{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row row-cols-1 row-cols-md-3 row-cols-lg-5 g-4">
+        {% for item in inventory_items %}
+        <div class="col">
+            <div class="card h-100">
+                <img src="{{ item.image_url }}" class="card-img-top" alt="{{ item.name }}" style="height: 280px; object-fit: contain;">
+                <div class="card-body">
+                    <h5 class="card-title" style="font-size: 1rem; height: 2.5rem; overflow: hidden;">{{ item.name }}</h5>
+                    <p class="card-text" style="font-size: 0.85rem; height: 3rem; overflow: hidden;">{{ item.description }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-primary fw-bold">${{ "%.2f"|format(item.price) }}</span>
+                        <button class="btn btn-outline-primary btn-sm add-to-cart" 
+                                data-id="{{ item.id }}" 
+                                data-name="{{ item.name }}" 
+                                data-price="{{ item.price }}">
+                            Add to Cart
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Add to Cart JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listeners to all "Add to Cart" buttons
+    document.querySelectorAll('.add-to-cart').forEach(button => {
+        button.addEventListener('click', function() {
+            const itemId = this.getAttribute('data-id');
+            const itemName = this.getAttribute('data-name');
+            const itemPrice = this.getAttribute('data-price');
+            
+            // Create form data
+            const formData = new FormData();
+            formData.append('item_id', itemId);
+            formData.append('item_name', itemName);
+            formData.append('item_price', itemPrice);
+            
+            // Send POST request to add item to cart
+            fetch('{{ url_for("shop.add_to_cart") }}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update cart count badge
+                    const cartCount = document.getElementById('cart-count');
+                    cartCount.textContent = data.cart_count;
+                    cartCount.classList.remove('d-none');
+                    
+                    // Show success message
+                    alert('Item added to cart!');
+                } else {
+                    alert('Error adding item to cart: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to add item to cart. Please try again.');
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

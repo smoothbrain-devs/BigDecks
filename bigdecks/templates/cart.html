@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+
+{% block header %}
+    <h1>{% block title %}Shopping Cart{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    {% if cart_items %}
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Price</th>
+                    <th>Quantity</th>
+                    <th>Subtotal</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in cart_items %}
+                <tr id="item-{{ item.id }}">
+                    <td>{{ item.name }}</td>
+                    <td>${{ "%.2f"|format(item.price) }}</td>
+                    <td>
+                        <div class="input-group" style="max-width: 120px;">
+                            <button class="btn btn-outline-secondary decrease-qty" data-id="{{ item.id }}">-</button>
+                            <input type="number" class="form-control text-center item-quantity" 
+                                  value="{{ item.quantity }}" data-id="{{ item.id }}" min="1">
+                            <button class="btn btn-outline-secondary increase-qty" data-id="{{ item.id }}">+</button>
+                        </div>
+                    </td>
+                    <td>${{ "%.2f"|format(item.price * item.quantity) }}</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm remove-item" data-id="{{ item.id }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                                <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                            </svg>
+                            Remove
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="table-active">
+                    <td colspan="3" class="text-end fw-bold">Total:</td>
+                    <td id="cart-total" class="fw-bold">${{ "%.2f"|format(total) }}</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    
+    <div class="d-flex justify-content-between mt-4">
+        <a href="{{ url_for('shop.inventory') }}" class="btn btn-secondary">Continue Shopping</a>
+        <a href="{{ url_for('shop.checkout') }}" class="btn btn-primary">Proceed to Checkout</a>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="bi bi-cart text-secondary mb-3" viewBox="0 0 16 16">
+            <path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5zM3.102 4l1.313 7h8.17l1.313-7H3.102zM5 12a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm7 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm-7 1a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+        </svg>
+        <h3 class="text-secondary">Your cart is empty</h3>
+        <p class="text-muted">Looks like you haven't added any items to your cart yet.</p>
+        <a href="{{ url_for('shop.inventory') }}" class="btn btn-primary mt-3">Browse Products</a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Cart JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle quantity changes
+    document.querySelectorAll('.increase-qty').forEach(button => {
+        button.addEventListener('click', function() {
+            const itemId = this.getAttribute('data-id');
+            const quantityInput = document.querySelector(`.item-quantity[data-id="${itemId}"]`);
+            const newQuantity = parseInt(quantityInput.value) + 1;
+            updateQuantity(itemId, newQuantity);
+        });
+    });
+    
+    document.querySelectorAll('.decrease-qty').forEach(button => {
+        button.addEventListener('click', function() {
+            const itemId = this.getAttribute('data-id');
+            const quantityInput = document.querySelector(`.item-quantity[data-id="${itemId}"]`);
+            const newQuantity = parseInt(quantityInput.value) - 1;
+            if (newQuantity >= 1) {
+                updateQuantity(itemId, newQuantity);
+            }
+        });
+    });
+    
+    document.querySelectorAll('.item-quantity').forEach(input => {
+        input.addEventListener('change', function() {
+            const itemId = this.getAttribute('data-id');
+            const newQuantity = parseInt(this.value);
+            if (newQuantity >= 1) {
+                updateQuantity(itemId, newQuantity);
+            } else {
+                this.value = 1;
+                updateQuantity(itemId, 1);
+            }
+        });
+    });
+    
+    // Handle remove item
+    document.querySelectorAll('.remove-item').forEach(button => {
+        button.addEventListener('click', function() {
+            const itemId = this.getAttribute('data-id');
+            removeItem(itemId);
+        });
+    });
+    
+    function updateQuantity(itemId, quantity) {
+        const formData = new FormData();
+        formData.append('item_id', itemId);
+        formData.append('quantity', quantity);
+        
+        fetch('{{ url_for("shop.update_quantity") }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Reload page to reflect updated cart
+                location.reload();
+            } else {
+                alert('Error updating quantity: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to update quantity. Please try again.');
+        });
+    }
+    
+    function removeItem(itemId) {
+        const formData = new FormData();
+        formData.append('item_id', itemId);
+        
+        fetch('{{ url_for("shop.remove_from_cart") }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Remove item row from table
+                const itemRow = document.getElementById(`item-${itemId}`);
+                if (itemRow) {
+                    itemRow.remove();
+                }
+                
+                // Update cart count badge
+                const cartCount = document.getElementById('cart-count');
+                if (data.cart_count > 0) {
+                    cartCount.textContent = data.cart_count;
+                    cartCount.classList.remove('d-none');
+                } else {
+                    cartCount.classList.add('d-none');
+                    // Reload page to show empty cart message
+                    location.reload();
+                }
+            } else {
+                alert('Error removing item: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to remove item. Please try again.');
+        });
+    }
+});
+</script>
+{% endblock %}
