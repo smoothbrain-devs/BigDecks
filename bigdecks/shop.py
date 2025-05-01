@@ -24,27 +24,33 @@ bp = Blueprint(name="shop", import_name=__name__)
 @bp.route("/shop")
 def inventory():
     """Display the shop inventory with actual card images."""
-    # Fetch 15 random cards from the database
-    inventory_items = []
-    for _ in range(15):
-        card = CardService.get_random_card()
-        # Use actual card data for the shop items
-        price = 0.99  # Default price
-        if card.prices.usd is not None:
-            try:
-                price = float(card.prices.usd)
-            except (ValueError, TypeError):
-                pass
-                
-        inventory_items.append({
-            "id": card.id,
-            "name": card.name,
-            "description": f"{card.set_name} - {card.rarity}",
-            "price": price,
-            "image_url": card.image_uris.normal or card.image_uris.highest_resolution
-        })
+    # Check if we already have inventory items in the session
+    if "inventory_items" not in session:
+        # If not, fetch 20 random cards and store them in the session
+        inventory_items = []
+        for _ in range(20):
+            card = CardService.get_random_card()
+            # Use actual card data for the shop items
+            price = 0.99  # Default price
+            if card.prices.usd is not None:
+                try:
+                    price = float(card.prices.usd)
+                except (ValueError, TypeError):
+                    pass
+                    
+            inventory_items.append({
+                "id": card.id,
+                "name": card.name,
+                "description": f"{card.set_name} - {card.rarity}",
+                "price": price,
+                "image_url": card.image_uris.normal or card.image_uris.small or card.image_uris.highest_resolution
+            })
+        
+        # Store in session
+        session["inventory_items"] = inventory_items
     
-    return render_template("shop/inventory.html", inventory_items=inventory_items)
+    # Use the stored inventory items
+    return render_template("shop/inventory.html", inventory_items=session["inventory_items"])
 
 
 @bp.route("/shop/packs")
@@ -56,21 +62,21 @@ def packs():
             "name": "Lost Caverns of Ixalan",
             "description": "Delve into ancient Maya-inspired caverns filled with dinosaurs and pirates.",
             "release_date": "November 2023",
-            "image_url": "https://cards.scryfall.io/art_crop/front/6/b/6b9bb8a1-1830-4895-8fcf-56c3ac1889b4.jpg",
+            "image_url": "https://via.placeholder.com/600x400?text=Lost+Caverns+of+Ixalan",
             "set_code": "lci"
         },
         {
             "name": "Murders at Karlov Manor",
             "description": "A murder mystery set in the city of Ravnica.",
             "release_date": "February 2024",
-            "image_url": "https://cards.scryfall.io/art_crop/front/9/5/95f2d22a-8614-4ddb-9e91-9a444524825f.jpg",
+            "image_url": "https://via.placeholder.com/600x400?text=Murders+at+Karlov+Manor",
             "set_code": "mkm"
         },
         {
             "name": "Outlaws of Thunder Junction",
             "description": "Wild west-themed set featuring notorious outlaws.",
             "release_date": "April 2024",
-            "image_url": "https://cards.scryfall.io/art_crop/front/3/b/3b01788a-bc01-4ede-a7f1-3d698a2a10f4.jpg",
+            "image_url": "https://via.placeholder.com/600x400?text=Outlaws+of+Thunder+Junction",
             "set_code": "otj"
         }
     ]
@@ -86,28 +92,28 @@ def packs():
                     "name": "Lost Caverns of Ixalan Draft Booster",
                     "description": "15 cards per pack",
                     "price": 4.99,
-                    "image_url": "https://cards.scryfall.io/normal/front/6/b/6b9bb8a1-1830-4895-8fcf-56c3ac1889b4.jpg"
+                    "image_url": "https://via.placeholder.com/300x400?text=Draft+Booster"
                 },
                 {
                     "id": "lci-collector",
                     "name": "Lost Caverns of Ixalan Collector Booster",
                     "description": "15 premium cards per pack",
                     "price": 24.99,
-                    "image_url": "https://cards.scryfall.io/normal/front/1/d/1d60022a-df1b-4970-b08d-a859fc6c0d9f.jpg"
+                    "image_url": "https://via.placeholder.com/300x400?text=Collector+Booster"
                 },
                 {
                     "id": "lci-bundle",
                     "name": "Lost Caverns of Ixalan Bundle",
                     "description": "8 Draft Boosters + accessories",
                     "price": 44.99,
-                    "image_url": "https://cards.scryfall.io/normal/front/f/4/f427911f-0411-4596-b5af-1a635942b31a.jpg"
+                    "image_url": "https://via.placeholder.com/300x400?text=Bundle"
                 },
                 {
                     "id": "lci-box",
                     "name": "Lost Caverns of Ixalan Draft Booster Box",
                     "description": "36 Draft Boosters",
                     "price": 139.99,
-                    "image_url": "https://cards.scryfall.io/normal/front/d/9/d992ee97-29fd-49c2-a181-7fc8bfffdde8.jpg"
+                    "image_url": "https://via.placeholder.com/300x400?text=Booster+Box"
                 }
             ]
         },
@@ -120,28 +126,28 @@ def packs():
                     "name": "Murders at Karlov Manor Draft Booster",
                     "description": "15 cards per pack",
                     "price": 4.99,
-                    "image_url": "https://cards.scryfall.io/normal/front/9/5/95f2d22a-8614-4ddb-9e91-9a444524825f.jpg"
+                    "image_url": "https://via.placeholder.com/300x400?text=Draft+Booster"
                 },
                 {
                     "id": "mkm-collector",
                     "name": "Murders at Karlov Manor Collector Booster",
                     "description": "15 premium cards per pack",
                     "price": 24.99,
-                    "image_url": "https://cards.scryfall.io/normal/front/5/4/547d95d9-4c8f-489d-a08a-6a8c25653543.jpg"
+                    "image_url": "https://via.placeholder.com/300x400?text=Collector+Booster"
                 },
                 {
                     "id": "mkm-bundle",
                     "name": "Murders at Karlov Manor Bundle",
                     "description": "8 Draft Boosters + accessories",
                     "price": 44.99,
-                    "image_url": "https://cards.scryfall.io/normal/front/6/5/657b81a0-4ce3-4aa4-94c8-f82d8c1cf3e0.jpg"
+                    "image_url": "https://via.placeholder.com/300x400?text=Bundle"
                 },
                 {
                     "id": "mkm-box",
                     "name": "Murders at Karlov Manor Draft Booster Box",
                     "description": "36 Draft Boosters",
                     "price": 139.99,
-                    "image_url": "https://cards.scryfall.io/normal/front/c/3/c3a9a640-8508-4baf-a76f-71f05f304b64.jpg"
+                    "image_url": "https://via.placeholder.com/300x400?text=Booster+Box"
                 }
             ]
         },
@@ -154,28 +160,28 @@ def packs():
                     "name": "Outlaws of Thunder Junction Draft Booster",
                     "description": "15 cards per pack",
                     "price": 4.99,
-                    "image_url": "https://cards.scryfall.io/normal/front/3/b/3b01788a-bc01-4ede-a7f1-3d698a2a10f4.jpg"
+                    "image_url": "https://via.placeholder.com/300x400?text=Draft+Booster"
                 },
                 {
                     "id": "otj-collector",
                     "name": "Outlaws of Thunder Junction Collector Booster",
                     "description": "15 premium cards per pack",
                     "price": 24.99,
-                    "image_url": "https://cards.scryfall.io/normal/front/7/0/705c3d3c-48d3-4582-9200-0c21a8c53f5d.jpg"
+                    "image_url": "https://via.placeholder.com/300x400?text=Collector+Booster"
                 },
                 {
                     "id": "otj-bundle",
                     "name": "Outlaws of Thunder Junction Bundle",
                     "description": "8 Draft Boosters + accessories",
                     "price": 44.99,
-                    "image_url": "https://cards.scryfall.io/normal/front/a/c/acbfd3f3-c58b-4e58-9de5-fd60ffcb4dec.jpg"
+                    "image_url": "https://via.placeholder.com/300x400?text=Bundle"
                 },
                 {
                     "id": "otj-box",
                     "name": "Outlaws of Thunder Junction Draft Booster Box",
                     "description": "36 Draft Boosters",
                     "price": 139.99,
-                    "image_url": "https://cards.scryfall.io/normal/front/f/8/f8a58b9b-ca83-4755-ba13-dee993f2a214.jpg"
+                    "image_url": "https://via.placeholder.com/300x400?text=Booster+Box"
                 }
             ]
         }
@@ -196,7 +202,10 @@ def cart():
 def add_to_cart():
     """Add an item to the shopping cart."""
     try:
-        item_id = int(request.form.get("item_id")) if request.form.get("item_id").isdigit() else request.form.get("item_id")
+        item_id = request.form.get("item_id")
+        if item_id.isdigit():
+            item_id = int(item_id)
+            
         item_name = request.form.get("item_name")
         item_price = float(request.form.get("item_price"))
         
@@ -291,27 +300,9 @@ def update_quantity():
 @login_required
 def checkout():
     """Process the checkout."""
-    cart_items = session.get("cart_items", [])
-    
-    if not cart_items:
-        flash("Your cart is empty.", "warning")
-        return redirect(url_for("shop.inventory"))
-    
-    # Calculate order total
-    total = sum(item.get("price", 0) * item.get("quantity", 0) for item in cart_items)
-    
-    # If form submitted, process the order
-    if request.method == "POST":
-        # Here you would add code to:
-        # 1. Process payment
-        # 2. Create order in database
-        # 3. Clear cart
-        
-        # For now, just clear the cart and show confirmation
-        session["cart_items"] = []
-        session["cart_count"] = 0
-        flash("Your order has been placed successfully!", "success")
-        return redirect(url_for("shop.inventory"))
-    
-    # Display checkout page with order summary
-    return render_template("shop/checkout.html", cart_items=cart_items, total=total)
+    # In a real implementation, this would process payment and create orders
+    # For now, we'll just clear the cart and show a confirmation
+    session["cart_items"] = []
+    session["cart_count"] = 0
+    flash("Your order has been placed successfully!")
+    return redirect(url_for("shop.inventory"))
