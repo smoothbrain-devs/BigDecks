@@ -6,6 +6,14 @@
 
 {% block content %}
 <div class="container">
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <a class="nav-link active" href="{{ url_for('shop.inventory') }}">Singles</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('shop.packs') }}">Packs & Boxes</a>
+        </li>
+    </ul>
     <div class="row row-cols-1 row-cols-md-3 row-cols-lg-5 g-4">
         {% for item in inventory_items %}
         <div class="col">

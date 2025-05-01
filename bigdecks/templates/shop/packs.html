@@ -1,0 +1,117 @@
+<!-- Create a new file: bigdecks/templates/shop/packs.html -->
+
+{% extends 'base.html' %}
+
+{% block header %}
+    <h1>{% block title %}Booster Packs & Boxes{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Category tabs -->
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('shop.inventory') }}">Singles</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link active" href="{{ url_for('shop.packs') }}">Packs & Boxes</a>
+        </li>
+    </ul>
+
+    <!-- Featured sets section -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <h2 class="border-bottom pb-2 mb-4">Featured Sets</h2>
+        </div>
+        {% for featured in featured_sets %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <img src="{{ featured.image_url }}" class="card-img-top" alt="{{ featured.name }}" style="height: 220px; object-fit: cover;">
+                <div class="card-body">
+                    <h5 class="card-title">{{ featured.name }}</h5>
+                    <p class="card-text">{{ featured.description }}</p>
+                    <p class="text-muted">Released: {{ featured.release_date }}</p>
+                </div>
+                <div class="card-footer bg-white">
+                    <a href="#{{ featured.set_code }}" class="btn btn-primary">View Products</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- All pack products -->
+    {% for set in sets %}
+    <div class="row mb-5" id="{{ set.set_code }}">
+        <div class="col-12">
+            <h2 class="border-bottom pb-2 mb-4">{{ set.name }}</h2>
+        </div>
+        
+        {% for product in set.products %}
+        <div class="col-md-3 mb-4">
+            <div class="card h-100">
+                <img src="{{ product.image_url }}" class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: contain;">
+                <div class="card-body">
+                    <h5 class="card-title" style="font-size: 1rem;">{{ product.name }}</h5>
+                    <p class="card-text"><small class="text-muted">{{ product.description }}</small></p>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <span class="text-primary fw-bold">${{ "%.2f"|format(product.price) }}</span>
+                        <button class="btn btn-outline-primary btn-sm add-to-cart" 
+                                data-id="{{ product.id }}" 
+                                data-name="{{ product.name }}" 
+                                data-price="{{ product.price }}">
+                            Add to Cart
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Add to Cart JavaScript  -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listeners to all "Add to Cart" buttons
+    document.querySelectorAll('.add-to-cart').forEach(button => {
+        button.addEventListener('click', function() {
+            const itemId = this.getAttribute('data-id');
+            const itemName = this.getAttribute('data-name');
+            const itemPrice = this.getAttribute('data-price');
+            
+            // Create form data
+            const formData = new FormData();
+            formData.append('item_id', itemId);
+            formData.append('item_name', itemName);
+            formData.append('item_price', itemPrice);
+            
+            // Send POST request to add item to cart
+            fetch('{{ url_for("shop.add_to_cart") }}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update cart count badge
+                    const cartCount = document.getElementById('cart-count');
+                    cartCount.textContent = data.cart_count;
+                    cartCount.classList.remove('d-none');
+                    
+                    // Show success message
+                    alert('Item added to cart!');
+                } else {
+                    alert('Error adding item to cart: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to add item to cart. Please try again.');
+            });
+        });
+    });
+});
+</script>
+{% endblock %}
