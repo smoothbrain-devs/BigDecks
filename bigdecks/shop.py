@@ -47,6 +47,143 @@ def inventory():
     return render_template("shop/inventory.html", inventory_items=inventory_items)
 
 
+@bp.route("/shop/packs")
+def packs():
+    """Display booster packs and boxes for sale."""
+    # Mock data for featured sets
+    featured_sets = [
+        {
+            "name": "Lost Caverns of Ixalan",
+            "description": "Delve into ancient Maya-inspired caverns filled with dinosaurs and pirates.",
+            "release_date": "November 2023",
+            "image_url": "https://cards.scryfall.io/art_crop/front/6/b/6b9bb8a1-1830-4895-8fcf-56c3ac1889b4.jpg",
+            "set_code": "lci"
+        },
+        {
+            "name": "Murders at Karlov Manor",
+            "description": "A murder mystery set in the city of Ravnica.",
+            "release_date": "February 2024",
+            "image_url": "https://cards.scryfall.io/art_crop/front/9/5/95f2d22a-8614-4ddb-9e91-9a444524825f.jpg",
+            "set_code": "mkm"
+        },
+        {
+            "name": "Outlaws of Thunder Junction",
+            "description": "Wild west-themed set featuring notorious outlaws.",
+            "release_date": "April 2024",
+            "image_url": "https://cards.scryfall.io/art_crop/front/3/b/3b01788a-bc01-4ede-a7f1-3d698a2a10f4.jpg",
+            "set_code": "otj"
+        }
+    ]
+    
+    # Mock data for sets and products
+    sets = [
+        {
+            "name": "Lost Caverns of Ixalan",
+            "set_code": "lci",
+            "products": [
+                {
+                    "id": "lci-booster",
+                    "name": "Lost Caverns of Ixalan Draft Booster",
+                    "description": "15 cards per pack",
+                    "price": 4.99,
+                    "image_url": "https://cards.scryfall.io/normal/front/6/b/6b9bb8a1-1830-4895-8fcf-56c3ac1889b4.jpg"
+                },
+                {
+                    "id": "lci-collector",
+                    "name": "Lost Caverns of Ixalan Collector Booster",
+                    "description": "15 premium cards per pack",
+                    "price": 24.99,
+                    "image_url": "https://cards.scryfall.io/normal/front/1/d/1d60022a-df1b-4970-b08d-a859fc6c0d9f.jpg"
+                },
+                {
+                    "id": "lci-bundle",
+                    "name": "Lost Caverns of Ixalan Bundle",
+                    "description": "8 Draft Boosters + accessories",
+                    "price": 44.99,
+                    "image_url": "https://cards.scryfall.io/normal/front/f/4/f427911f-0411-4596-b5af-1a635942b31a.jpg"
+                },
+                {
+                    "id": "lci-box",
+                    "name": "Lost Caverns of Ixalan Draft Booster Box",
+                    "description": "36 Draft Boosters",
+                    "price": 139.99,
+                    "image_url": "https://cards.scryfall.io/normal/front/d/9/d992ee97-29fd-49c2-a181-7fc8bfffdde8.jpg"
+                }
+            ]
+        },
+        {
+            "name": "Murders at Karlov Manor",
+            "set_code": "mkm",
+            "products": [
+                {
+                    "id": "mkm-booster",
+                    "name": "Murders at Karlov Manor Draft Booster",
+                    "description": "15 cards per pack",
+                    "price": 4.99,
+                    "image_url": "https://cards.scryfall.io/normal/front/9/5/95f2d22a-8614-4ddb-9e91-9a444524825f.jpg"
+                },
+                {
+                    "id": "mkm-collector",
+                    "name": "Murders at Karlov Manor Collector Booster",
+                    "description": "15 premium cards per pack",
+                    "price": 24.99,
+                    "image_url": "https://cards.scryfall.io/normal/front/5/4/547d95d9-4c8f-489d-a08a-6a8c25653543.jpg"
+                },
+                {
+                    "id": "mkm-bundle",
+                    "name": "Murders at Karlov Manor Bundle",
+                    "description": "8 Draft Boosters + accessories",
+                    "price": 44.99,
+                    "image_url": "https://cards.scryfall.io/normal/front/6/5/657b81a0-4ce3-4aa4-94c8-f82d8c1cf3e0.jpg"
+                },
+                {
+                    "id": "mkm-box",
+                    "name": "Murders at Karlov Manor Draft Booster Box",
+                    "description": "36 Draft Boosters",
+                    "price": 139.99,
+                    "image_url": "https://cards.scryfall.io/normal/front/c/3/c3a9a640-8508-4baf-a76f-71f05f304b64.jpg"
+                }
+            ]
+        },
+        {
+            "name": "Outlaws of Thunder Junction",
+            "set_code": "otj",
+            "products": [
+                {
+                    "id": "otj-booster",
+                    "name": "Outlaws of Thunder Junction Draft Booster",
+                    "description": "15 cards per pack",
+                    "price": 4.99,
+                    "image_url": "https://cards.scryfall.io/normal/front/3/b/3b01788a-bc01-4ede-a7f1-3d698a2a10f4.jpg"
+                },
+                {
+                    "id": "otj-collector",
+                    "name": "Outlaws of Thunder Junction Collector Booster",
+                    "description": "15 premium cards per pack",
+                    "price": 24.99,
+                    "image_url": "https://cards.scryfall.io/normal/front/7/0/705c3d3c-48d3-4582-9200-0c21a8c53f5d.jpg"
+                },
+                {
+                    "id": "otj-bundle",
+                    "name": "Outlaws of Thunder Junction Bundle",
+                    "description": "8 Draft Boosters + accessories",
+                    "price": 44.99,
+                    "image_url": "https://cards.scryfall.io/normal/front/a/c/acbfd3f3-c58b-4e58-9de5-fd60ffcb4dec.jpg"
+                },
+                {
+                    "id": "otj-box",
+                    "name": "Outlaws of Thunder Junction Draft Booster Box",
+                    "description": "36 Draft Boosters",
+                    "price": 139.99,
+                    "image_url": "https://cards.scryfall.io/normal/front/f/8/f8a58b9b-ca83-4755-ba13-dee993f2a214.jpg"
+                }
+            ]
+        }
+    ]
+    
+    return render_template("shop/packs.html", featured_sets=featured_sets, sets=sets)
+
+
 @bp.route("/cart")
 def cart():
     """Display the shopping cart."""
@@ -59,7 +196,7 @@ def cart():
 def add_to_cart():
     """Add an item to the shopping cart."""
     try:
-        item_id = int(request.form.get("item_id"))
+        item_id = int(request.form.get("item_id")) if request.form.get("item_id").isdigit() else request.form.get("item_id")
         item_name = request.form.get("item_name")
         item_price = float(request.form.get("item_price"))
         
@@ -100,7 +237,9 @@ def add_to_cart():
 def remove_from_cart():
     """Remove an item from the shopping cart."""
     try:
-        item_id = int(request.form.get("item_id"))
+        item_id = request.form.get("item_id")
+        if item_id.isdigit():
+            item_id = int(item_id)
         
         if "cart_items" in session:
             session["cart_items"] = [item for item in session["cart_items"] if item["id"] != item_id]
@@ -121,7 +260,10 @@ def remove_from_cart():
 def update_quantity():
     """Update the quantity of an item in the cart."""
     try:
-        item_id = int(request.form.get("item_id"))
+        item_id = request.form.get("item_id")
+        if item_id.isdigit():
+            item_id = int(item_id)
+            
         quantity = int(request.form.get("quantity"))
         
         if quantity < 1:
@@ -149,147 +291,27 @@ def update_quantity():
 @login_required
 def checkout():
     """Process the checkout."""
-    # In a real implementation, this would process payment and create orders
-    # For now, we'll just clear the cart and show a confirmation
-    session["cart_items"] = []
-    session["cart_count"] = 0
-    flash("Your order has been placed successfully!")
-    return redirect(url_for("shop.inventory"))
-
-# Add to bigdecks/shop.py
-
-@bp.route("/shop/packs")
-def packs():
-    """Display booster packs and boxes for purchase."""
-    # Featured sets with nice artwork
-    featured_sets = [
-        {
-            "name": "Ravnica Remastered",
-            "set_code": "RVR",
-            "description": "A powerful set featuring the best cards from across all Ravnica blocks.",
-            "release_date": "January 12, 2025",
-            "image_url": "https://m.media-amazon.com/images/I/81jGHGpJ6YL._AC_UF894,1000_QL80_.jpg"
-        },
-        {
-            "name": "Bloomburrow",
-            "set_code": "BBR",
-            "description": "Explore a whimsical world of woodland creatures with their own societies and magic.",
-            "release_date": "March 15, 2025",
-            "image_url": "https://i0.wp.com/mtgazone.com/wp-content/uploads/2024/02/Bloomburrow-Key-Art.jpg"
-        },
-        {
-            "name": "Modern Horizons 3",
-            "set_code": "MH3",
-            "description": "The latest Modern Horizons set, pushing the boundaries of Modern format once again.",
-            "release_date": "April 18, 2025",
-            "image_url": "https://i.redd.it/modern-horizons-3-is-set-to-release-on-june-14th-2024-v0-7kq1c8zqvtuc1.jpg?s=f2ada48c7feb1ed6ca5e2da4195b81d064dcfc78"
-        }
-    ]
+    cart_items = session.get("cart_items", [])
     
-    # Sets and their products
-    sets = [
-        {
-            "name": "Ravnica Remastered",
-            "set_code": "RVR",
-            "products": [
-                {
-                    "id": "rvr_booster",
-                    "name": "Ravnica Remastered Draft Booster",
-                    "description": "15 cards per pack, great for drafting.",
-                    "price": 4.99,
-                    "image_url": "https://m.media-amazon.com/images/I/71e7n7GrxfL._AC_UF894,1000_QL80_.jpg"
-                },
-                {
-                    "id": "rvr_collector",
-                    "name": "Ravnica Remastered Collector Booster",
-                    "description": "15 cards per pack including foils and special treatments.",
-                    "price": 24.99,
-                    "image_url": "https://m.media-amazon.com/images/I/71KGq+SwhYL._AC_UF894,1000_QL80_.jpg"
-                },
-                {
-                    "id": "rvr_box",
-                    "name": "Ravnica Remastered Draft Booster Box",
-                    "description": "36 Draft Booster packs.",
-                    "price": 149.99,
-                    "image_url": "https://m.media-amazon.com/images/I/810X4hXhX-L._AC_UF894,1000_QL80_.jpg"
-                },
-                {
-                    "id": "rvr_collector_box",
-                    "name": "Ravnica Remastered Collector Box",
-                    "description": "12 Collector Booster packs.",
-                    "price": 249.99,
-                    "image_url": "https://m.media-amazon.com/images/I/91P8FrCzDrL._AC_UF894,1000_QL80_.jpg"
-                }
-            ]
-        },
-        {
-            "name": "Bloomburrow",
-            "set_code": "BBR",
-            "products": [
-                {
-                    "id": "bbr_play",
-                    "name": "Bloomburrow Play Booster",
-                    "description": "10 cards per pack, optimized for gameplay.",
-                    "price": 5.99,
-                    "image_url": "https://cdn11.bigcommerce.com/s-xoh7bo/images/stencil/original/products/5969/90969/184892_200w__25258.1709150818.jpg"
-                },
-                {
-                    "id": "bbr_collector",
-                    "name": "Bloomburrow Collector Booster",
-                    "description": "15 cards per pack with the most sought-after treatments.",
-                    "price": 29.99,
-                    "image_url": "https://cdn.shopify.com/s/files/1/0355/9531/7933/files/184893_200w_6f92ecca-46c8-43d1-a99e-f52dcc8d9c6a_large.jpg"
-                },
-                {
-                    "id": "bbr_box",
-                    "name": "Bloomburrow Play Booster Box",
-                    "description": "18 Play Booster packs.",
-                    "price": 99.99,
-                    "image_url": "https://i0.wp.com/legitmtg.com/wp-content/uploads/2024/02/Bloom-Burrow-Play-Booster-Box.jpg"
-                },
-                {
-                    "id": "bbr_bundle",
-                    "name": "Bloomburrow Bundle",
-                    "description": "8 Play Boosters, 40 lands, and accessories.",
-                    "price": 49.99,
-                    "image_url": "https://d1rw89lz12ur5s.cloudfront.net/photo/coretcg/file/1864990/414c39f01b6a4d97852df74be3d2d7ad.jpg"
-                }
-            ]
-        },
-        {
-            "name": "Modern Horizons 3",
-            "set_code": "MH3",
-            "products": [
-                {
-                    "id": "mh3_draft",
-                    "name": "Modern Horizons 3 Draft Booster",
-                    "description": "15 cards per pack with a guaranteed premium Modern-legal reprint.",
-                    "price": 7.99,
-                    "image_url": "https://upload.wikimedia.org/wikipedia/en/a/a2/Modern_Horizons_booster_pack.jpg"
-                },
-                {
-                    "id": "mh3_collector",
-                    "name": "Modern Horizons 3 Collector Booster",
-                    "description": "15 cards with special treatments and high-value reprints.",
-                    "price": 34.99,
-                    "image_url": "https://cdn.shopify.com/s/files/1/0567/4178/1416/files/MH2CB_PACK.png"
-                },
-                {
-                    "id": "mh3_draft_box",
-                    "name": "Modern Horizons 3 Draft Booster Box",
-                    "description": "36 Draft Booster packs.",
-                    "price": 269.99,
-                    "image_url": "https://m.media-amazon.com/images/I/A1R60dNMhVL._AC_UF1000,1000_QL80_.jpg"
-                },
-                {
-                    "id": "mh3_collector_box",
-                    "name": "Modern Horizons 3 Collector Box",
-                    "description": "12 Collector Booster packs for the premium experience.",
-                    "price": 399.99,
-                    "image_url": "https://m.media-amazon.com/images/I/91T23m8g+1L._AC_UF894,1000_QL80_.jpg"
-                }
-            ]
-        }
-    ]
+    if not cart_items:
+        flash("Your cart is empty.", "warning")
+        return redirect(url_for("shop.inventory"))
     
-    return render_template("shop/packs.html", featured_sets=featured_sets, sets=sets)
+    # Calculate order total
+    total = sum(item.get("price", 0) * item.get("quantity", 0) for item in cart_items)
+    
+    # If form submitted, process the order
+    if request.method == "POST":
+        # Here you would add code to:
+        # 1. Process payment
+        # 2. Create order in database
+        # 3. Clear cart
+        
+        # For now, just clear the cart and show confirmation
+        session["cart_items"] = []
+        session["cart_count"] = 0
+        flash("Your order has been placed successfully!", "success")
+        return redirect(url_for("shop.inventory"))
+    
+    # Display checkout page with order summary
+    return render_template("shop/checkout.html", cart_items=cart_items, total=total)
