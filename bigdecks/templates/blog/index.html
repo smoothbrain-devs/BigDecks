@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <div class="d-flex justify-content-between align-items-center">
+    <h1>{% block title %}Posts{% endblock %}</h1>
+    {% if g.user %}
+      <a class="btn btn-primary" href="{{ url_for('blog.create') }}">Create Post</a>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block content %}
+  {% for post in posts %}
+    <article class="post">
+      <header>
+        <div>
+          <h1>{{ post['title'] }}</h1>
+          <div class="about">by {{ post['username'] }} on {{ post['created'] }}</div>
+        </div>
+        {% if g.user and g.user['id'] == post['author_id'] %}
+          <a class="action" href="{{ url_for('blog.update', id=post['id']) }}">Edit</a>
+        {% endif %}
+      </header>
+      <p class="body">{{ post['body'] }}</p>
+      {% if g.user and g.user['id'] == post['author_id'] %}
+        <form action="{{ url_for('blog.delete', id=post['id']) }}" method="post" onsubmit="return confirm('Are you sure you want to delete this post?');">
+          <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+        </form>
+      {% endif %}
+    </article>
+    {% if not loop.last %}
+      <hr>
+    {% endif %}
+  {% endfor %}
+  
+  {% if posts|length == 0 %}
+    <div class="alert alert-info">
+      No posts yet. {% if g.user %}Use the Create Post button to add one!{% else %}Log in to create posts.{% endif %}
+    </div>
+  {% endif %}
+{% endblock %}

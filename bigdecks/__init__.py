@@ -58,9 +58,19 @@ def create_app(test_configuration=None):
     # TODO(Cthuloops): We need to add the app.routes here as blueprints
     # https://flask.palletsprojects.com/en/stable/tutorial/views/
 
-    # Initialize the database
-    from .database import init_app as init_db_app
-    init_db_app(app)
+
+    # Initialize database first
+    from .database import init_app 
+    try:
+        init_app(app)
+    except Exception as e:
+        print(f"{e}")
+
+    # Add the index to the app.
+    from . import home
+    app.register_blueprint(home.bp)
+    app.add_url_rule("/", endpoint="index")
+    app.register_blueprint(home.bp)
 
     # Register cards cli commands
     from .database.cards_db import init_app as init_cards_db_app
@@ -69,6 +79,14 @@ def create_app(test_configuration=None):
     from . import auth, cards, home
     app.register_blueprint(auth.bp)
     app.register_blueprint(cards.bp)
-    app.register_blueprint(home.bp)
+
+    # Import blog bp
+    from . import blog
+    app.register_blueprint(blog.bp)
+
+    # Import tournament bp
+    from . import tournament
+    app.register_blueprint(tournament.bp)
+    app.add_url_rule('/tournament', endpoint='tournament.index', view_func=tournament.index)
 
     return app

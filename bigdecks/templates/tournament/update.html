@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Edit Tournament: {{ tournament['name'] }}{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+  <div class="row">
+    <div class="col-md-8 offset-md-2">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h2 class="h5 mb-0">Tournament Details</h2>
+        </div>
+        <div class="card-body">
+          <form method="post">
+            <div class="mb-3">
+              <label for="name" class="form-label">Tournament Name</label>
+              <input type="text" class="form-control" id="name" name="name" required 
+                     value="{{ request.form['name'] or tournament['name'] }}">
+            </div>
+            
+            <div class="mb-3">
+              <label for="description" class="form-label">Description</label>
+              <textarea class="form-control" id="description" name="description" rows="3">{{ request.form['description'] or tournament['description'] }}</textarea>
+            </div>
+            
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="format" class="form-label">Format</label>
+                <select class="form-select" id="format" name="format" required>
+                  <option value="standard" {% if (request.form['format'] or tournament['format']) == 'standard' %}selected{% endif %}>Standard</option>
+                  <option value="modern" {% if (request.form['format'] or tournament['format']) == 'modern' %}selected{% endif %}>Modern</option>
+                  <option value="commander" {% if (request.form['format'] or tournament['format']) == 'commander' %}selected{% endif %}>Commander</option>
+                  <option value="legacy" {% if (request.form['format'] or tournament['format']) == 'legacy' %}selected{% endif %}>Legacy</option>
+                  <option value="vintage" {% if (request.form['format'] or tournament['format']) == 'vintage' %}selected{% endif %}>Vintage</option>
+                  <option value="pauper" {% if (request.form['format'] or tournament['format']) == 'pauper' %}selected{% endif %}>Pauper</option>
+                  <option value="pioneer" {% if (request.form['format'] or tournament['format']) == 'pioneer' %}selected{% endif %}>Pioneer</option>
+                  <option value="draft" {% if (request.form['format'] or tournament['format']) == 'draft' %}selected{% endif %}>Draft</option>
+                  <option value="sealed" {% if (request.form['format'] or tournament['format']) == 'sealed' %}selected{% endif %}>Sealed</option>
+                  <option value="other" {% if (request.form['format'] or tournament['format']) == 'other' %}selected{% endif %}>Other</option>
+                </select>
+              </div>
+              
+              <div class="col-md-6 mb-3">
+                <label for="date" class="form-label">Date</label>
+                <input type="date" class="form-control" id="date" name="date" required 
+                       value="{{ request.form['date'] or tournament['date'] }}">
+              </div>
+            </div>
+            
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="max_players" class="form-label">Maximum Players</label>
+                <input type="number" class="form-control" id="max_players" name="max_players" 
+                       min="2" max="128" value="{{ request.form['max_players'] or tournament['max_players'] }}">
+                <div class="form-text">Number must be even for Swiss pairings to work properly.</div>
+              </div>
+              
+              <div class="col-md-6 mb-3">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status" required>
+                  <option value="registration" {% if (request.form['status'] or tournament['status']) == 'registration' %}selected{% endif %}>Registration Open</option>
+                  <option value="in_progress" {% if (request.form['status'] or tournament['status']) == 'in_progress' %}selected{% endif %}>In Progress</option>
+                  <option value="completed" {% if (request.form['status'] or tournament['status']) == 'completed' %}selected{% endif %}>Completed</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="d-flex justify-content-between">
+              <button type="submit" class="btn btn-primary">Update Tournament</button>
+              
+              <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+                Delete Tournament
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Delete Confirmation Modal -->
+  <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteModalLabel">Confirm Deletion</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          Are you sure you want to delete this tournament? This action cannot be undone.
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <form action="{{ url_for('tournament.delete', id=tournament['id']) }}" method="post">
+            <button type="submit" class="btn btn-danger">Delete Tournament</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
