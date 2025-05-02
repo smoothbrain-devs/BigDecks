@@ -23,6 +23,10 @@
 				<img src="{{ card.image_uris.highest_resolution }}" alt="{{ card.name }}" class="rounded">
 			</div>
 			<div class="col card-description">
+            <p><span>{{ card.oracle_text }}</span></p>
+                {% if card.flavor_text %}
+                    <p><span><em>{{ card.flavor_text }}</em></span></p>
+                {% endif %}
 				<table id="related-parts">
 					<thead>
 						<tr>
