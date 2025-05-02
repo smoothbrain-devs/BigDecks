@@ -43,12 +43,11 @@ def create_app(test_configuration=None):
         # Load the test configuration if it was passed in.
         app.config.from_mapping(test_configuration)
 
-    # Ensure the instance folder exists.
+    # Ensure the instance directory
     try:
         os.makedirs(app.instance_path, exist_ok=True)
     except OSError as e:
         print(f"{e}")
-
 
     # Create a context for the app
     @app.context_processor
@@ -56,7 +55,6 @@ def create_app(test_configuration=None):
         """Make the current year available to all templates"""
         return {'year': datetime.now().year}
 
-      
     # TODO(Cthuloops): We need to add the app.routes here as blueprints
     # https://flask.palletsprojects.com/en/stable/tutorial/views/
 
@@ -72,13 +70,14 @@ def create_app(test_configuration=None):
     from . import home
     app.register_blueprint(home.bp)
     app.add_url_rule("/", endpoint="index")
+    app.register_blueprint(home.bp)
 
+    # Register cards cli commands
+    from .database.cards_db import init_app as init_cards_db_app
+    init_cards_db_app(app)
 
-    from . import auth
+    from . import auth, cards, home
     app.register_blueprint(auth.bp)
-
-
-    from . import cards
     app.register_blueprint(cards.bp)
 
     # Import blog bp

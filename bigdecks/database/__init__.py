@@ -45,6 +45,18 @@ def init_app(app: Flask):
 
     # Register CLI command
     app.cli.add_command(init_db_command)
+    
+    database_path = os.path.join(app.instance_path, "database")
+    try:
+        os.makedirs(os.path.join(database_path), exist_ok=True)
+    except OSError as e:
+        click.echo(f"Could not create database directory: {e}")
+
+    # Create the users and cards databases
+    dbs = ["users", "cards"]
+    with app.app_context():
+        for db in dbs:
+            init_db(db)
 
     # Register the teardown function to close database connections
     app.teardown_appcontext(close_connections)
@@ -71,6 +83,7 @@ def init_db(db_name: str) -> None:
         click.echo(f"Creating the {db_name} database")
         if db_name in ["users", "cards"]:
             schema_path = os.path.join("database", f"{db_name}_schema.sql")
+
         conn = get_db_connection(db_name)
 
         if schema_path is not None:
@@ -124,8 +137,9 @@ def init_db(db_name: str) -> None:
         else:
             click.echo(f"Warning: {post_schema_path} does not exist. Blog functionality may be limited.")
 
+        conn.commit()
 
-
+        
 @click.command("init-db")
 @click.argument("db_name", required=True)
 @with_appcontext

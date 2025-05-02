@@ -41,4 +41,5 @@
 - Update every 24 hours or so.
 
 ## Cards DB
-We're using a subset of the overall information from the Scryfall API, we can always extend to the full amount if necessary.
+- Cards need to be searched by name to find all the unique printings of the card since each card has a unique id.
+    - If there's a specific printing needed search via id otherwise search name and then select the most recent normal card art.
