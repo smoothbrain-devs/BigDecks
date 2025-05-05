@@ -177,8 +177,8 @@ featured_cards = [
     }
 ]
 
-# same thing but for the packs
-packs = [
+# same thing but for the packs - RENAMED TO booster_packs to avoid name conflict
+booster_packs = [
     {
         'id': 1,
         'name': 'Murders at Karlov Manor',
@@ -222,7 +222,7 @@ def singles():
 @bp.route('/packs')
 def packs():
     """Display booster packs for sale."""
-    return render_template('shop/packs.html', packs=packs)
+    return render_template('shop/packs.html', packs=booster_packs)
 
 @bp.route('/cart')
 def cart():

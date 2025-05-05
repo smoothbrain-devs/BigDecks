@@ -12,7 +12,7 @@
           <h2 class="h5 mb-0">Shipping Information</h2>
         </div>
         <div class="card-body">
-          <form method="post">
+          <form id="checkout-form">
             <div class="mb-3">
               <label for="name" class="form-label">Full Name</label>
               <input type="text" class="form-control" id="name" name="name" required>
@@ -67,7 +67,7 @@
             
             <div class="d-flex justify-content-between mt-4">
               <a href="{{ url_for('shop.cart') }}" class="btn btn-outline-secondary">Back to Cart</a>
-              <button type="submit" class="btn btn-primary">Place Order</button>
+              <button type="button" id="place-order-btn" class="btn btn-primary">Place Order</button>
             </div>
           </form>
         </div>
@@ -106,4 +106,55 @@
       </div>
     </div>
   </div>
+  
+  <!-- Thank You Modal -->
+  <div class="modal fade" id="thankYouModal" tabindex="-1" aria-labelledby="thankYouModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title" id="thankYouModalLabel">Thank You!</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body text-center py-5">
+          <h2 class="mb-4">Thank you, this concludes the demo!</h2>
+          <p class="lead mb-4">Your order has been "placed" successfully.</p>
+          <p class="text-muted">This is just a demonstration - no actual purchases have been made.</p>
+        </div>
+        <div class="modal-footer justify-content-center">
+          <a href="{{ url_for('home.home') }}" class="btn btn-primary">Return to Homepage</a>
+          <a href="{{ url_for('shop.index') }}" class="btn btn-outline-primary">Return to Shop</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Get elements
+      const checkoutForm = document.getElementById('checkout-form');
+      const placeOrderBtn = document.getElementById('place-order-btn');
+      
+      // Initialize the modal
+      const thankYouModal = new bootstrap.Modal(document.getElementById('thankYouModal'));
+      
+      // Add click event to the "Place Order" button
+      placeOrderBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        // Check if form is valid
+        if (checkoutForm.checkValidity()) {
+          // Show the thank you modal
+          thankYouModal.show();
+          
+          // Clear the cart in session storage (if you're using it)
+          if (sessionStorage.getItem('cart')) {
+            sessionStorage.removeItem('cart');
+          }
+        } else {
+          // Trigger HTML5 validation
+          checkoutForm.reportValidity();
+        }
+      });
+    });
+  </script>
 {% endblock %}
