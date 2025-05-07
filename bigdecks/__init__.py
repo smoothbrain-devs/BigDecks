@@ -70,7 +70,7 @@ def create_app(test_configuration=None):
     from . import home
     app.register_blueprint(home.bp)
     app.add_url_rule("/", endpoint="index")
-    app.register_blueprint(home.bp)
+    #app.register_blueprint(home.bp) commented out this line line 71 is identical
 
     # Register cards cli commands
     from .database.cards_db import init_app as init_cards_db_app
@@ -88,5 +88,9 @@ def create_app(test_configuration=None):
     from . import tournament
     app.register_blueprint(tournament.bp)
     app.add_url_rule('/tournament', endpoint='tournament.index', view_func=tournament.index)
+
+    #Import shop bp
+    from . import shop
+    app.register_blueprint(shop.bp)
 
     return app

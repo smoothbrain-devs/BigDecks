@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}Order Confirmation{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-header bg-success text-white">
+          <h2 class="h5 mb-0">Thank You for Your Order!</h2>
+        </div>
+        <div class="card-body">
+          <div class="alert alert-success">
+            <p><strong>Your order has been placed successfully.</strong></p>
+            <p>Order ID: #{{ order.id }}</p>
+            <p>Date: {{ order.created_at }}</p>
+          </div>
+          
+          <h3 class="h5 mt-4">Order Details</h3>
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Price</th>
+                  <th>Quantity</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in items %}
+                  <tr>
+                    <td>{{ item.name }}</td>
+                    <td>${{ item.price }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>${{ "%.2f"|format(item.price * item.quantity) }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+              <tfoot>
+                <tr class="table-active">
+                  <td colspan="3" class="text-end"><strong>Order Total:</strong></td>
+                  <td><strong>${{ "%.2f"|format(order.total) }}</strong></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          
+          <h3 class="h5 mt-4">Shipping Information</h3>
+          <p>
+            {{ order.name }}<br>
+            {{ order.address }}<br>
+            {{ order.city }}, {{ order.state }} {{ order.zipcode }}
+          </p>
+          
+          <div class="mt-4">
+            <a href="{{ url_for('shop.index') }}" class="btn btn-primary">Continue Shopping</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

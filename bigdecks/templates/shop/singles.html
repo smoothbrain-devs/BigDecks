@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <div class="d-flex justify-content-between align-items-center">
+    <h1>{% block title %}Singles{% endblock %}</h1>
+    <a href="{{ url_for('shop.cart') }}" class="btn btn-outline-primary">View Cart</a>
+  </div>
+{% endblock %}
+
+{% block content %}
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h2 class="h5 mb-0">Featured Cards</h2>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            {% for card in featured_cards %}
+              <div class="col-md-3 mb-4">
+                <div class="card h-100">
+                  <img src="{{ card.image_uri }}" class="card-img-top" alt="{{ card.name }}">
+                  <div class="card-body">
+                    <h5 class="card-title">{{ card.name }}</h5>
+                    <p class="card-text small">{{ card.set_name }}</p>
+                    <p class="card-text"><strong>${{ card.price }}</strong></p>
+                    <form action="{{ url_for('shop.add_to_cart') }}" method="post">
+                      <input type="hidden" name="item_id" value="{{ card.scryfall_id }}">
+                      <input type="hidden" name="item_type" value="single">
+                      <input type="hidden" name="name" value="{{ card.name }}">
+                      <input type="hidden" name="price" value="{{ card.price }}">
+                      <input type="hidden" name="image" value="{{ card.image_uri }}">
+                      <div class="input-group mb-3">
+                        <span class="input-group-text">Qty</span>
+                        <input type="number" class="form-control" name="quantity" value="1" min="1" max="99">
+                        <button type="submit" class="btn btn-primary">Add to Cart</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- You could add filtering and search options here later project but know its need to make the card search smoother especially with how many magic cards there are-->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header bg-secondary text-white">
+          <h2 class="h5 mb-0">Search & Filter</h2>
+        </div>
+        <div class="card-body">
+          <p class="text-muted">Advanced search and filtering coming soon!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
