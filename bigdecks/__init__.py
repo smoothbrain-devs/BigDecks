@@ -33,7 +33,7 @@ def create_app(test_configuration=None):
     # in the instance folder, which shouldn't be committed to github.
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(
-        SECRET_KEY='dev', # TODO(Cthuloops): obviously we should change this for production.
+        SECRET_KEY='dev',  # TODO(Cthuloops): obviously we should change this for production.
     )
 
     if test_configuration is None:
@@ -58,9 +58,8 @@ def create_app(test_configuration=None):
     # TODO(Cthuloops): We need to add the app.routes here as blueprints
     # https://flask.palletsprojects.com/en/stable/tutorial/views/
 
-
     # Initialize database first
-    from .database import init_app 
+    from .database import init_app
     try:
         init_app(app)
     except Exception as e:
@@ -70,7 +69,6 @@ def create_app(test_configuration=None):
     from . import home
     app.register_blueprint(home.bp)
     app.add_url_rule("/", endpoint="index")
-    #app.register_blueprint(home.bp) commented out this line line 71 is identical
 
     # Register cards cli commands
     from .database.cards_db import init_app as init_cards_db_app
@@ -87,9 +85,10 @@ def create_app(test_configuration=None):
     # Import tournament bp
     from . import tournament
     app.register_blueprint(tournament.bp)
-    app.add_url_rule('/tournament', endpoint='tournament.index', view_func=tournament.index)
+    app.add_url_rule('/tournament', endpoint='tournament.index',
+                     view_func=tournament.index)
 
-    #Import shop bp
+    # Import shop bp
     from . import shop
     app.register_blueprint(shop.bp)
 
