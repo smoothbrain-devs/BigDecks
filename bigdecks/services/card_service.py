@@ -50,8 +50,10 @@ class CardService:
         """
 
     _SELECT_PRINTS_BY_NAME = """
-        SELECT id, set_name, set_code, collector_number, png,
-        border_crop, art_crop, large, normal, small
+        SELECT id, set_name, set_code, collector_number, price_usd,
+        price_usd_foil, price_usd_etched, price_eur, price_eur_foil,
+        price_eur_etched, price_tix, png, border_crop, art_crop, large,
+        normal, small
         FROM core
         WHERE name = ?;
         """

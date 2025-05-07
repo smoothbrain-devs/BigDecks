@@ -792,7 +792,8 @@ class Card:
                                    "set_name": d_row["set_name"],
                                    "set_code": d_row["set_code"],
                                    "collector_number": d_row["collector_number"],
-                                   "images": ImageUris(dict(d_row))})
+                                   "images": ImageUris(dict(d_row)),
+                                   "prices": Prices(dict(d_row))})
 
         return prints
 

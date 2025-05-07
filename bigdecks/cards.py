@@ -46,6 +46,7 @@ def card_by_set_collector(set_code: str, collector_number: str,
        Collector number for the card to display.
     """
     card = CardService.get_card_by_set_collector(set_code, collector_number)
+    print(repr(card.oracle_text))
     return render_template("cards.html", card=card)
 
 

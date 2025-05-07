@@ -328,58 +328,70 @@ class Prices():
         return price
 
     @property
-    def usd(self, finish="normal") -> str | None:
+    def usd(self) -> str | None:
         """Get the price in USD.
 
-        Parameters
-        ----------
-        finish: str (default = 'normal')
-            Options:
-                'normal'
-                'foil'
-                'etched'
-
         Returns
         -------
         str | None
         """
-        match finish:
-            case "normal":
-                key = "price_usd"
-            case "foil":
-                key = "price_usd_foil"
-            case "etched":
-                key = "price_usd_etched"
-
-        assert isinstance(self.__prices[key], (str | None))
-        return self.__prices[key]
+        assert isinstance(self.__prices["price_usd"], (str | None))
+        return self.__prices["price_usd"]
 
     @property
-    def eur(self, finish="normal") -> str | None:
-        """Get the price in EUR.
-
-        Parameters
-        ----------
-        finish: str (default = 'normal')
-            Options:
-                'normal'
-                'foil'
-                'etched'
+    def usd_foil(self) -> str | None:
+        """Get the price in USD.
 
         Returns
         -------
         str | None
         """
-        match finish:
-            case "normal":
-                key = "price_eur"
-            case "foil":
-                key = "price_eur_foil"
-            case "etched":
-                key = "price_eur_etched"
+        assert isinstance(self.__prices["price_usd_foil"], (str | None))
+        return self.__prices["price_usd_foil"]
 
-        assert isinstance(self.__prices[key], (str | None))
-        return self.__prices[key]
+    @property
+    def usd_etched(self) -> str | None:
+        """Get the price in USD.
+
+        Returns
+        -------
+        str | None
+        """
+        assert isinstance(self.__prices["price_usd_etched"], (str | None))
+        return self.__prices["price_usd_etched"]
+
+    @property
+    def eur(self) -> str | None:
+        """Get the price in EUR.
+
+        Returns
+        -------
+        str | None
+        """
+        assert isinstance(self.__prices["price_eur"], (str | None))
+        return self.__prices["price_eur"]
+
+    @property
+    def eur_foil(self) -> str | None:
+        """Get the price in EUR.
+
+        Returns
+        -------
+        str | None
+        """
+        assert isinstance(self.__prices["price_eur_foil"], (str | None))
+        return self.__prices["price_eur_foil"]
+
+    @property
+    def eur_etched(self) -> str | None:
+        """Get the price in EUR.
+
+        Returns
+        -------
+        str | None
+        """
+        assert isinstance(self.__prices["price_eur_etched"], (str | None))
+        return self.__prices["price_eur_etched"]
 
     @property
     def tix(self) -> str | None:
