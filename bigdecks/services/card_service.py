@@ -22,8 +22,9 @@ class CardService:
         """
     _SELECT_CARD_FACES = """
         SELECT id, cmc, color_indicator, colors, defense, flavor_text,
-        image_uris, layout, loyalty, mana_cost, name, oracle_text, power,
-        toughness, type_line, supertype, cardtype, subtype
+        png, border_crop, art_crop, large, normal, small, layout, loyalty,
+        mana_cost, name, oracle_text, power, toughness, type_line, supertype,
+        cardtype, subtype
         """
 
     _SELECT_ARENA_ID = "SELECT arena_id"
@@ -41,6 +42,7 @@ class CardService:
     _BY_SCRYFALL_ID = " WHERE scryfall_id = ?;"
     _BY_NAME = " WHERE name = ?;"
     _BY_CORE_ID = " WHERE core_id = ?;"
+    _BY_SET_COLLECTOR = " WHERE set_code = ? AND collector_number = ?;"
 
     _RANDOM_CARD = """
         ORDER BY RANDOM()
@@ -48,8 +50,10 @@ class CardService:
         """
 
     _SELECT_PRINTS_BY_NAME = """
-        SELECT id, set_name, set_code, collector_number, png,
-        border_crop, art_crop, large, normal, small
+        SELECT id, set_name, set_code, collector_number, price_usd,
+        price_usd_foil, price_usd_etched, price_eur, price_eur_foil,
+        price_eur_etched, price_tix, png, border_crop, art_crop, large,
+        normal, small
         FROM core
         WHERE name = ?;
         """
@@ -75,7 +79,7 @@ class CardService:
         row = conn.execute(query).fetchone()
 
         from bigdecks.models.card import Card
-        return Card(dict(row), conn)
+        return Card(row, conn)
 
     @classmethod
     def get_card_by_scryfall_id(cls, scryfall_id: str,
@@ -94,9 +98,7 @@ class CardService:
         -------
         Card
         """
-        assert isinstance(conn, (sqlite3.Connection | None))
         assert isinstance(scryfall_id, str)
-
         if not conn:
             conn = get_db_connection("cards")
 
@@ -105,7 +107,34 @@ class CardService:
         row = conn.execute(query, params).fetchone()
 
         from bigdecks.models.card import Card
-        return Card(dict(row), conn)
+        return Card(row, conn)
+
+    @classmethod
+    def get_card_by_set_collector(cls, set_code: str, collector_number: str,
+                                  conn: sqlite3.Connection | None = None
+                                  ) -> "Card":
+        """Get a card using it's set code and collector number.
+
+        Parameters
+        ----------
+        set_code: str
+            Set code for the card.
+        collector_number: str
+            Collector number for the card.
+        conn: sqlite3.Connection | None
+            Connection to the 'cards' database.
+        """
+        assert isinstance(set_code, str)
+        assert isinstance(collector_number, str)
+        if not conn:
+            conn = get_db_connection("cards")
+
+        query = cls._SELECT_CARD + cls._FROM_CORE + cls._BY_SET_COLLECTOR
+        params = (set_code, collector_number,)
+        row = conn.execute(query, params).fetchone()
+
+        from bigdecks.models.card import Card
+        return Card(row, conn)
 
     @classmethod
     def get_card_faces(cls, scryfall_id: str,

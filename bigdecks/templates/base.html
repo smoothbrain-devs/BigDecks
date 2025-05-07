@@ -46,7 +46,6 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
                         </li>
-                        
                         {% endif %}
                     </ul>
                 </div>
@@ -81,5 +80,17 @@
                 <p>&copy; {{ year }} BigDecks. All rights reserved.</p>
             </div>
         </footer>
+        <!-- Activate tooltips in Bootstrap -->
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl, {
+                        html: true,
+                        sanitize: false
+                    });
+                })
+        });
+        </script>
     </body>
 </html>

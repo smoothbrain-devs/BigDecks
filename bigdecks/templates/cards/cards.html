@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% block header %}
+<h1>{% block title %}Cards{% endblock %}</h1>
+{% endblock %}
+
+
+{% block content %}
+<div class="container-fluid">
+    <article class="card">
+        <div class="row">
+            <div id="image" class="col-4">
+                {% if card.has_card_faces %}
+                <img src="{{ card.front_face.image_uris.highest_resolution }}" alt="{{ card.front_face.name }}" style="max-width: 400px" class="rounded">
+                <img src="{{ card.back_face.image_uris.highest_resolution }}" alt="{{ card.back_face.name }}" style="max-width: 400px" class="rounded">
+                {% endif %}
+                <img src="{{ card.image_uris.highest_resolution }}" alt="{{ card.name }}" style="max-width: 400px" class="rounded">
+            </div>
+            <div class="col-4 card-description table-responsive">
+                <h2 class="border-bottom border-dark-subtle border-2">{{ card.name }}</h2>
+                <p class="border-bottom border-dark-subtle border-2">{{ card.type_line }}</p>
+                <p class="border-bottom border-dark-subtle border-2 oracle-text">
+                    <span>{{ card.oracle_text|replace('(', '<i>(')|replace(')', ')</i>')|replace('\n', '<br>')|safe }}</span>
+                </p>
+                {% if card.flavor_text %}
+                <p class="border-bottom border-dark-subtle border-2">
+                    <span class="flavor-text"><i>{{ card.flavor_text }}</i></span>
+                </p>
+                {% endif %}
+
+                <table class="table table-border caption-top">
+                    <thead>
+                        <tr>
+                            <th scope="col">Print</th>
+                            <th scope="col">USD</th>
+                            <th scope="col">EUR</th>
+                            <th scope="col">TIX</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="print">
+                                {{ card.set_name }} #{{ card.collector_number }}
+                            </td>
+                            <td>
+                                {% if card.prices.usd %}
+                                    ${{ card.prices.usd }}
+                                {% elif card.prices.usd_foil %}
+                                    ${{ card.prices.usd_foil }}
+                                {% elif card.prices.usd_etched %}
+                                    ${{ card.prices.usd_etched }}
+                                {% else %}
+                                    X
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if card.prices.eur %}
+                                    €{{ card.prices.eur }}
+                                {% elif card.prices.eur_foil %}
+                                    €{{ card.prices.eur_foil }}
+                                {% elif card.prices.eur_etched %}
+                                    €{{ card.prices.eur_etched }}
+                                {% else %}
+                                    X
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if card.prices.tix %}
+                                    {{ card.prices.tix }}
+                                {% else %}
+                                    X
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+            </div>
+            {% if card.prints %}
+            <div class="prints-container col-4" style="max-height: 550px; overflow: hidden; display: flex; flex-direction: column;">
+                <h4>Other Printings ({{ card.prints|length }})</h4>
+
+                <div class="table-responsive" style="overflow-y: auto; flex-grow: 1;">
+                    <table class="table caption-top">
+                        <thead>
+                            <caption>Card print links and prices</caption>
+                            <tr>
+                                <th scope="col">Print</th>
+                                <th scope="col">USD</th>
+                                <th scope="col">EUR</th>
+                                <th scope="col">TIX</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for print in card.prints %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('cards.card_by_set_collector', set_code=print['set_code'], collector_number=print['collector_number'], card_name=card.name|urlencode) }}" data-bs-toggle="tooltip" data-bs-html="true" data-bs-placement="right" data-bs-title="<img src='{{ print['images'].small }}' class='img-fluid' style='max-width: 175px;'>">{{ print.set_name }} #{{ print.collector_number }}</a>
+                                </td>
+                                <td>
+                                    {% if print['prices'].usd %}
+                                        ${{ print['prices'].usd }}
+                                    {% elif print['prices'].usd_foil %}
+                                        ${{ print['prices'].usd_foil }}
+                                    {% elif print['prices'].usd_etched %}
+                                        ${{ print['prices'].usd_etched }}
+                                    {% else %}
+                                        X
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if print['prices'].eur %}
+                                        €{{ print['prices'].eur }}
+                                    {% elif print['prices'].eur_foil %}
+                                        €{{ print['prices'].eur_foil }}
+                                    {% elif print['prices'].eur_etched %}
+                                        €{{ print['prices'].eur_etched }}
+                                    {% else %}
+                                        X
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if print['prices'].tix %}
+                                        {{ print['prices'].tix }}
+                                    {% else %}
+                                        X
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </article>
+</div>
+{% endblock %}
