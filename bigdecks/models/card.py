@@ -616,7 +616,7 @@ class Card:
     def image_uris(self) -> ImageUris:
         """Get the image uris for this card.
 
-        You can access the uris using dot notation (e.g. card.png)
+        You can access the uris using dot notation (e.g. card.image_uris.png)
 
         Returns
         -------

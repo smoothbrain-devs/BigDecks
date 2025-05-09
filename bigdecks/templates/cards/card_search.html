@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block header %}
+<h1>{% block title %}Search{% endblock %}</h1>
+{% endblock %}
+
+
+{% block content %}
+<form id="search-block" method="get" action="{{ url_for('cards.search') }}">
+    <label for="search-bar" class="col-sm-1 col-form-label">Search</label>
+    <div class="mb-3 input-group" id="search-bar-div">
+        <input type="text" id="search-bar" name="name" class="form-control" placeholder="Enter Card name"
+            aria-describedby="search-bar-help-block">
+        <button class="btn btn-primary" type="button submit" id="button-addon2">Search</button>
+    </div>
+    <!-- <h2>Colors</h2>
+    <div>
+        <div class="form-check mb-3" id="colorWhite">
+            <input class="form-check-input" type="checkbox" name="colors" value="W" id="checkWhite">
+            <label class="form-check-label" for="checkWhite">
+                White
+            </label>
+        </div>
+        <div class="form-check mb-3" id="colorBlue">
+            <input class="form-check-input" type="checkbox" name="colors" value="U" id="checkWhite">
+            <label class="form-check-label" for="checkBlue">
+                Blue
+            </label>
+        </div>
+        <div class="form-check mb-3" id="colorBlack">
+            <input class="form-check-input" type="checkbox" name="colors" value="B" id="checkWhite">
+            <label class="form-check-label" for="checkBlack">
+                Black
+            </label>
+        </div>
+        <div class="form-check mb-3" id="colorRed">
+            <input class="form-check-input" type="checkbox" name="colors" value="R" id="checkWhite">
+            <label class="form-check-label" for="checkRed">
+                Red
+            </label>
+        </div>
+        <div class="form-check mb-3" id="colorGreen">
+            <input class="form-check-input" type="checkbox" name="colors" value="G" id="checkWhite">
+            <label class="form-check-label" for="checkGreen">
+                Green
+            </label>
+        </div>
+        <div class="form-check mb-3" id="colorColorless">
+            <input class="form-check-input" type="checkbox" name="colors" value="colorless" id="checkWhite">
+            <label class="form-check-label" for="checkColorless">
+                Colorless
+            </label>
+        </div>
+    </div> -->
+</div>
+{% endblock %}

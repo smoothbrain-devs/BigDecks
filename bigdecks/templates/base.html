@@ -30,7 +30,7 @@
                             <a class="nav-link" href="{{ url_for('tournament.index') }}">Tournaments</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('cards.home') }}">Cards</a>
+                            <a class="nav-link" href="{{ url_for('cards.search') }}">Cards</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('shop.index') }}">Shop</a>
@@ -47,6 +47,9 @@
                             <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
                         </li>
                         {% endif %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('cards.random') }}">Random Card</a>
+                        </li>
                     </ul>
                 </div>
             </div>
