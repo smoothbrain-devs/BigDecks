@@ -8,23 +8,34 @@ from bigdecks.database import get_db_connection
 
 
 class CardService:
-    _SELECT_CARD = """
-        SELECT id, scryfall_id, layout, all_parts, card_faces, cmc,
-        color_identity, keywords, standard, future, historic, timeless,
-        gladiator, pioneer, explorer, modern, legacy, pauper, vintage,
-        penny, commander, oathbreaker, standardbrawl, brawl, alchemy,
-        paupercommander, duel, oldschool, premodern, predh, mana_cost, name,
-        oracle_text, power, toughness, type_line, supertype, cardtype,
-        subtype, collector_number, flavor_text, paper, arena, mtgo, png,
-        border_crop, art_crop, large, normal, small, price_usd, price_usd_foil,
-        price_usd_etched, price_eur, price_eur_foil, price_eur_etched,
-        price_tix, rarity, reprint, set_name, set_code
+    _SELECT_CARD_C = """
+        SELECT c.id, c.scryfall_id, c.layout, c.all_parts, c.card_faces, c.cmc,
+        c.color_identity, c.keywords, c.standard, c.future, c.historic, c.timeless,
+        c.gladiator, c.pioneer, c.explorer, c.modern, c.legacy, c.pauper, c.vintage,
+        c.penny, c.commander, c.oathbreaker, c.standardbrawl, c.brawl, c.alchemy,
+        c.paupercommander, c.duel, c.oldschool, c.premodern, c.predh, c.mana_cost, c.name,
+        c.oracle_text, c.power, c.toughness, c.type_line, c.supertype, c.cardtype,
+        c.subtype, c.collector_number, c.flavor_text, c.paper, c.arena, c.mtgo, c.png,
+        c.border_crop, c.art_crop, c.large, c.normal, c.small, c.price_usd, c.price_usd_foil,
+        c.price_usd_etched, c.price_eur, c.price_eur_foil, c.price_eur_etched,
+        c.price_tix, c.rarity, c.reprint, c.set_name, c.set_code
         """
     _SELECT_CARD_FACES = """
         SELECT id, cmc, color_indicator, colors, defense, flavor_text,
         png, border_crop, art_crop, large, normal, small, layout, loyalty,
         mana_cost, name, oracle_text, power, toughness, type_line, supertype,
         cardtype, subtype
+        """
+    _SELECT_PRINTS_BY_NAME = """
+        SELECT id, set_name, set_code, collector_number, price_usd,
+        price_usd_foil, price_usd_etched, price_eur, price_eur_foil,
+        price_eur_etched, price_tix, png, border_crop, art_crop, large,
+        normal, small
+        FROM core
+        WHERE name = ?;
+        """
+    _SELECT_SEARCH = """
+        SELECT c.name, c.scryfall_id, c.set_code, c.collector_number, c.small, c.card_faces
         """
 
     _SELECT_ARENA_ID = "SELECT arena_id"
@@ -34,7 +45,7 @@ class CardService:
     _SELECT_FLAVOR_NAME = "SELECT flavor_name"
     _SELECT_PRODUCED_MANA = "SELECT produced_mana"
 
-    _FROM_CORE = " FROM core"
+    _FROM_CORE = " FROM core c"
     _FROM_ALL_PARTS = " FROM all_parts"
     _FROM_CARD_FACES = " FROM card_faces"
 
@@ -47,15 +58,6 @@ class CardService:
     _RANDOM_CARD = """
         ORDER BY RANDOM()
         LIMIT 1;
-        """
-
-    _SELECT_PRINTS_BY_NAME = """
-        SELECT id, set_name, set_code, collector_number, price_usd,
-        price_usd_foil, price_usd_etched, price_eur, price_eur_foil,
-        price_eur_etched, price_tix, png, border_crop, art_crop, large,
-        normal, small
-        FROM core
-        WHERE name = ?;
         """
 
     @classmethod
@@ -75,7 +77,7 @@ class CardService:
         if not conn:
             conn = get_db_connection("cards")
 
-        query = cls._SELECT_CARD + cls._FROM_CORE + cls._RANDOM_CARD
+        query = cls._SELECT_CARD_C + cls._FROM_CORE + cls._RANDOM_CARD
         row = conn.execute(query).fetchone()
 
         from bigdecks.models.card import Card
@@ -102,7 +104,7 @@ class CardService:
         if not conn:
             conn = get_db_connection("cards")
 
-        query = cls._SELECT_CARD + cls._FROM_CORE + cls._BY_SCRYFALL_ID
+        query = cls._SELECT_CARD_C + cls._FROM_CORE + cls._BY_SCRYFALL_ID
         params = (scryfall_id,)
         row = conn.execute(query, params).fetchone()
 
@@ -129,7 +131,7 @@ class CardService:
         if not conn:
             conn = get_db_connection("cards")
 
-        query = cls._SELECT_CARD + cls._FROM_CORE + cls._BY_SET_COLLECTOR
+        query = cls._SELECT_CARD_C + cls._FROM_CORE + cls._BY_SET_COLLECTOR
         params = (set_code, collector_number,)
         row = conn.execute(query, params).fetchone()
 
@@ -411,3 +413,76 @@ class CardService:
         rows = conn.execute(query, params).fetchall()
 
         return rows
+
+    @classmethod
+    def search_for(cls, name: str | None = None,
+                   colors: list[str] | None = None,
+                   page: int = 1, per_page: int = 25,
+                   conn: sqlite3.Connection | None = None
+                   ) -> dict[str, object]:
+        """Search for cards with pagination.
+
+        Parameters
+        ----------
+        name: str, optional
+            Partial or full name to search for.
+        colors: list[str], optional
+            list of color strings (e.g. "W", "U").
+        page: int, default 1
+            The page number (1-indexed).
+        per_page: int, default 25
+            Number of results to show per page.
+
+        Returns
+        -------
+        dict
+        {
+            - "cards": list[Card], List of Card objects for the current page.
+            - "total": int,        Total number of matching cards.
+            - "pages": int,        Total number of pages.
+            - "current_page": int, The current page number.
+        }
+        """
+        if not conn:
+            conn = get_db_connection("cards")
+
+        # Build the base query
+        base_query = cls._SELECT_SEARCH +\
+            """
+            FROM core c
+            JOIN (
+                SELECT name, MIN(id) as min_id
+                FROM core
+                WHERE name LIKE ?
+                GROUP BY name
+            ) as distinct_names
+            ON c.id = distinct_names.min_id
+            """
+
+        params = [f"%{name}%"]
+
+        # Get total count for pagination
+        count_query = base_query.replace(cls._SELECT_SEARCH, "SELECT COUNT(*)")
+        total = conn.execute(count_query, params).fetchone()[0]
+
+        # Add pagination
+        query = base_query + " LIMIT ? OFFSET ?"
+        offset = (page - 1) * per_page
+        params.extend([str(per_page), str(offset)])
+
+        # Calculate total pages
+        pages = (total + per_page - 1) // per_page
+
+        # Execute and return dict
+        rows = conn.execute(query, params).fetchall()
+        dicts = [dict(row) for row in rows]
+        for card in dicts:
+            if card["card_faces"] and not card["small"]:
+                card["small"] = conn.execute("SELECT small FROM card_faces WHERE ? = core_id", (card["scryfall_id"],)).fetchone()["small"]
+
+        return {
+            "cards": dicts,
+            "total": total,
+            "pages": pages,
+            "current_page": page
+        }
