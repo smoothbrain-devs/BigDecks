@@ -28,6 +28,9 @@
                 <p><strong>Format:</strong> {{ tournament['format'] }}</p>
                 <p><strong>Date:</strong> {{ tournament['date'] }}</p>
                 <p><strong>Status:</strong> <span class="badge bg-{% if tournament['status'] == 'registration' %}success{% elif tournament['status'] == 'in_progress' %}warning{% else %}secondary{% endif %}">{{ tournament['status'] | capitalize }}</span></p>
+                {% if tournament['status'] in ['in_progress', 'completed'] %}
+                <p><strong>Round:</strong> {{ tournament['current_round'] }} / {{ tournament['max_rounds'] }}</p>
+                {% endif %}
               </div>
               <div class="col-md-6">
                 <p><strong>Maximum Players:</strong> {{ tournament['max_players'] }}</p>
@@ -77,11 +80,44 @@
         </div>
         <div class="card-body">
           {% if participants %}
-            <ul class="list-group">
-              {% for participant in participants %}
-                <li class="list-group-item">{{ participant['username'] }}</li>
-              {% endfor %}
-            </ul>
+            {% if tournament['status'] in ['in_progress', 'completed'] and records %}
+              <table class="table table-striped table-hover">
+                <thead>
+                  <tr>
+                    <th>Player</th>
+                    <th>Record</th>
+                    <th>Points</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for participant in participants|sort(attribute='username') %}
+                    <tr>
+                      <td>{{ participant['username'] }}</td>
+                      <td>
+                        {% if records[participant['id']] %}
+                          {{ records[participant['id']]['wins'] }}-{{ records[participant['id']]['losses'] }}-{{ records[participant['id']]['draws'] }}
+                        {% else %}
+                          0-0-0
+                        {% endif %}
+                      </td>
+                      <td>
+                        {% if records[participant['id']] %}
+                          {{ records[participant['id']]['points'] }}
+                        {% else %}
+                          0
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            {% else %}
+              <ul class="list-group">
+                {% for participant in participants %}
+                  <li class="list-group-item">{{ participant['username'] }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
             <p class="mt-2 text-muted">{{ participants|length }} / {{ tournament['max_players'] }} registered</p>
           {% else %}
             <p class="text-muted">No participants registered yet.</p>

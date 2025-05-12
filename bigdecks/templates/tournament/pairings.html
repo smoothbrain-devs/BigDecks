@@ -4,7 +4,7 @@
   <div class="d-flex justify-content-between align-items-center">
     <h1>{% block title %}Pairings: {{ tournament['name'] }}{% endblock %}</h1>
     
-    {% if is_organizer and tournament['status'] == 'in_progress' %}
+    {% if is_organizer and tournament['status'] == 'in_progress' and tournament['current_round'] < tournament['max_rounds'] %}
       <form action="{{ url_for('tournament.generate_pairings', id=tournament['id']) }}" method="post">
         <button type="submit" class="btn btn-success">Generate Next Round</button>
       </form>
@@ -33,19 +33,24 @@
                 </span>
               </p>
               <p><strong>Total Players:</strong> {{ tournament['participants_count'] }}</p>
-              <p><strong>Current Round:</strong> 
-                {% set max_round = 0 %}
-                {% for match in matches %}
-                  {% if match['round'] > max_round %}
-                    {% set max_round = match['round'] %}
-                  {% endif %}
-                {% endfor %}
-                {{ max_round }}
-              </p>
+              <p><strong>Current Round:</strong> {{ tournament['current_round'] }} / {{ tournament['max_rounds'] }}</p>
             </div>
           </div>
           <div class="mt-3">
             <a href="{{ url_for('tournament.details', id=tournament['id']) }}" class="btn btn-outline-primary">Back to Tournament Details</a>
+            
+            {% if is_organizer and tournament['status'] == 'registration' %}
+              <div class="alert alert-info mt-3">
+                <strong>Note:</strong> To generate pairings and start the tournament, change the tournament status from "Registration Open" to "In Progress" on the 
+                <a href="{{ url_for('tournament.update', id=tournament['id']) }}">Edit Tournament</a> page.
+              </div>
+            {% elif is_organizer and tournament['status'] == 'in_progress' and tournament['current_round'] >= tournament['max_rounds'] %}
+              <div class="alert alert-warning mt-3">
+                <strong>Note:</strong> This tournament has reached the maximum number of rounds ({{ tournament['max_rounds'] }}).
+                You may want to change the tournament status to "Completed" on the 
+                <a href="{{ url_for('tournament.update', id=tournament['id']) }}">Edit Tournament</a> page.
+              </div>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -97,9 +102,9 @@
               <span class="text-muted">
                 Result: 
                 {% if match['player1_wins'] > match['player2_wins'] %}
-                  {{ match['player1_name'] }} Won ({{ match['player1_wins']}-{{ match['player2_wins'] }})
+                  {{ match['player1_name'] }} Won ({{ match['player1_wins'] }}-{{ match['player2_wins'] }})
                 {% elif match['player2_wins'] > match['player1_wins'] %}
-                  {{ match['player2_name'] }} Won ({{ match['player2_wins']}-{{ match['player1_wins'] }})
+                  {{ match['player2_name'] }} Won ({{ match['player2_wins'] }}-{{ match['player1_wins'] }})
                 {% else %}
                   Draw
                 {% endif %}
@@ -120,7 +125,13 @@
     {% endfor %}
   {% else %}
     <div class="alert alert-info">
-      No pairings generated yet. {% if is_organizer %}Use the "Generate Next Round" button to create pairings.{% endif %}
+      {% if tournament['status'] == 'registration' %}
+        No pairings generated yet. To start generating pairings, first change the tournament status to "In Progress" on the <a href="{{ url_for('tournament.update', id=tournament['id']) }}">Edit Tournament</a> page.
+      {% elif tournament['status'] == 'in_progress' %}
+        No pairings generated yet. {% if is_organizer %}Use the "Generate Next Round" button to create pairings.{% endif %}
+      {% else %}
+        No pairings found for this tournament.
+      {% endif %}
     </div>
   {% endif %}
 {% endblock %}

@@ -1,17 +1,165 @@
 """Tournament organization functionality
 
 This module contains the routes and logic for tournament organization.
+Includes enhancements for round limits and player records.
 """
 
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, url_for
 )
 from werkzeug.exceptions import abort
+import math
 
 from bigdecks.auth import login_required
 from bigdecks.database import get_db_connection
 
+# Define the Blueprint first - this was missing in the previous code
 bp = Blueprint('tournament', __name__, url_prefix='/tournament')
+
+def get_tournament(id, check_organizer=False):
+    """Get a tournament by ID with additional data.
+    
+    Parameters
+    ----------
+    id : int
+        The tournament ID
+    check_organizer : bool
+        If True, verify that the current user is the tournament organizer
+        
+    Returns
+    -------
+    dict
+        The tournament data with added fields:
+        - participants_count: Number of participants
+        - max_rounds: Maximum number of rounds based on participants
+        
+    Raises
+    ------
+    404
+        If the tournament doesn't exist
+    403
+        If check_organizer is True and the current user is not the organizer
+    """
+    db = get_db_connection('users')
+    
+    # Get basic tournament info
+    tournament = db.execute(
+        'SELECT t.id, t.name, t.description, t.format, t.date, '
+        't.max_players, t.status, t.organizer_id, u.username as organizer_name '
+        'FROM tournament t JOIN user u ON t.organizer_id = u.id '
+        'WHERE t.id = ?',
+        (id,)
+    ).fetchone()
+    
+    if tournament is None:
+        abort(404, f"Tournament id {id} doesn't exist.")
+        
+    if check_organizer and (g.user is None or g.user['id'] != tournament['organizer_id']):
+        abort(403)
+    
+    # Convert to dictionary so we can add more fields
+    tournament = dict(tournament)
+    
+    # Count participants
+    participants_count = db.execute(
+        'SELECT COUNT(*) as count FROM participant WHERE tournament_id = ?',
+        (id,)
+    ).fetchone()['count']
+    
+    tournament['participants_count'] = participants_count
+    
+    # Calculate maximum rounds based on Swiss tournament formula
+    # Formula: log2(number of players) rounded up
+    # For 8 players: 3 rounds, 16 players: 4 rounds, etc.
+    if participants_count > 1:
+        max_rounds = math.ceil(math.log2(participants_count))
+    else:
+        max_rounds = 0
+        
+    tournament['max_rounds'] = max_rounds
+    
+    # Get current round
+    current_round = db.execute(
+        'SELECT MAX(round) as max_round FROM match WHERE tournament_id = ?',
+        (id,)
+    ).fetchone()['max_round']
+    
+    tournament['current_round'] = current_round if current_round is not None else 0
+        
+    return tournament
+
+# Function to get player records
+def get_player_records(tournament_id):
+    """Get win-loss-draw records for all players in a tournament.
+    
+    Parameters
+    ----------
+    tournament_id : int
+        The tournament ID
+        
+    Returns
+    -------
+    dict
+        Dictionary mapping participant_id to {wins, losses, draws}
+    """
+    db = get_db_connection('users')
+    records = {}
+    
+    # Get all participants in this tournament
+    participants = db.execute(
+        'SELECT id, user_id FROM participant WHERE tournament_id = ?',
+        (tournament_id,)
+    ).fetchall()
+    
+    for participant in participants:
+        participant_id = participant['id']
+        
+        # Initialize record
+        records[participant_id] = {
+            'user_id': participant['user_id'],
+            'wins': 0,
+            'losses': 0,
+            'draws': 0,
+            'points': 0  # 3 points for win, 1 for draw
+        }
+        
+        # Get matches where this participant was player 1
+        player1_matches = db.execute(
+            'SELECT player1_wins, player2_wins, draws, status '
+            'FROM match '
+            'WHERE tournament_id = ? AND player1_id = ? AND status = "completed"',
+            (tournament_id, participant_id)
+        ).fetchall()
+        
+        for match in player1_matches:
+            if match['player1_wins'] > match['player2_wins']:
+                records[participant_id]['wins'] += 1
+                records[participant_id]['points'] += 3
+            elif match['player1_wins'] < match['player2_wins']:
+                records[participant_id]['losses'] += 1
+            else:
+                records[participant_id]['draws'] += 1
+                records[participant_id]['points'] += 1
+                
+        # Get matches where this participant was player 2
+        player2_matches = db.execute(
+            'SELECT player1_wins, player2_wins, draws, status '
+            'FROM match '
+            'WHERE tournament_id = ? AND player2_id = ? AND status = "completed"',
+            (tournament_id, participant_id)
+        ).fetchall()
+        
+        for match in player2_matches:
+            if match['player2_wins'] > match['player1_wins']:
+                records[participant_id]['wins'] += 1
+                records[participant_id]['points'] += 3
+            elif match['player2_wins'] < match['player1_wins']:
+                records[participant_id]['losses'] += 1
+            else:
+                records[participant_id]['draws'] += 1
+                records[participant_id]['points'] += 1
+                
+    return records
 
 @bp.route('/')
 def index():
@@ -79,7 +227,15 @@ def details(id):
         (id,)
     ).fetchall()
     
-    return render_template('tournament/details.html', tournament=tournament, participants=participants)
+    # Get player records if tournament is in progress or completed
+    records = {}
+    if tournament['status'] in ['in_progress', 'completed']:
+        records = get_player_records(id)
+        
+    return render_template('tournament/details.html', 
+                          tournament=tournament, 
+                          participants=participants,
+                          records=records)
 
 @bp.route('/<int:id>/register', methods=('POST',))
 @login_required
@@ -217,6 +373,7 @@ def pairings(id):
     is_organizer = g.user and tournament['organizer_id'] == g.user['id']
     
     db = get_db_connection('users')
+    
     # Get all matches for this tournament
     matches = db.execute(
         'SELECT m.id, m.round, m.player1_id, m.player2_id, '
@@ -240,63 +397,166 @@ def pairings(id):
 @bp.route('/<int:id>/generate_pairings', methods=('POST',))
 @login_required
 def generate_pairings(id):
-    """Generate pairings for the next round."""
+    """Generate pairings for the next round using Swiss pairing system."""
     tournament = get_tournament(id, check_organizer=True)
     
     db = get_db_connection('users')
-    # TODO: Implement proper Swiss pairing algorithm
-    # For now, just pair players randomly for the first round
     
-    # Check if pairings already exist
-    current_round = db.execute(
-        'SELECT MAX(round) as max_round FROM match WHERE tournament_id = ?',
-        (id,)
-    ).fetchone()['max_round']
-    
-    if current_round is None:
-        current_round = 0
+    # Check if we've reached the maximum number of rounds
+    if tournament['current_round'] >= tournament['max_rounds']:
+        flash(f'Maximum number of rounds ({tournament["max_rounds"]}) has been reached for this tournament.')
+        return redirect(url_for('tournament.pairings', id=id))
     
     # Check if all matches in current round are completed
-    if current_round > 0:
+    if tournament['current_round'] > 0:
         incomplete_matches = db.execute(
             'SELECT COUNT(*) as count FROM match '
             'WHERE tournament_id = ? AND round = ? AND status != "completed"',
-            (id, current_round)
+            (id, tournament['current_round'])
         ).fetchone()['count']
         
         if incomplete_matches > 0:
             flash('Cannot generate pairings until all matches in the current round are completed.')
             return redirect(url_for('tournament.pairings', id=id))
     
-    # Get all participants
+    # Get all active participants
     participants = db.execute(
-        'SELECT p.id FROM participant p '
+        'SELECT p.id, p.user_id, u.username '
+        'FROM participant p JOIN user u ON p.user_id = u.id '
         'WHERE p.tournament_id = ? AND p.status = "registered"',
         (id,)
     ).fetchall()
     
-    participant_ids = [p['id'] for p in participants]
-    
     # Need an even number of players
-    if len(participant_ids) % 2 != 0:
+    if len(participants) % 2 != 0:
         flash('Cannot generate pairings with an odd number of players. Consider adding a bye.')
         return redirect(url_for('tournament.pairings', id=id))
     
-    # Simple pairing: just match players sequentially for now
-    next_round = current_round + 1
+    next_round = tournament['current_round'] + 1
     
-    for i in range(0, len(participant_ids), 2):
-        player1_id = participant_ids[i]
-        player2_id = participant_ids[i+1]
+    # First round: pair randomly or by registration order
+    if next_round == 1:
+        # Simple pairing for first round (could be randomized for true Swiss)
+        participant_ids = [p['id'] for p in participants]
         
-        db.execute(
-            'INSERT INTO match (tournament_id, round, player1_id, player2_id, status) '
-            'VALUES (?, ?, ?, ?, ?)',
-            (id, next_round, player1_id, player2_id, 'in_progress')
-        )
+        for i in range(0, len(participant_ids), 2):
+            player1_id = participant_ids[i]
+            player2_id = participant_ids[i+1]
+            
+            db.execute(
+                'INSERT INTO match (tournament_id, round, player1_id, player2_id, status) '
+                'VALUES (?, ?, ?, ?, ?)',
+                (id, next_round, player1_id, player2_id, 'in_progress')
+            )
+    else:
+        # Swiss pairing for subsequent rounds
+        # Calculate standings based on completed matches
+        standings = []
+        
+        for p in participants:
+            # Initialize player record
+            points = 0
+            wins = 0
+            losses = 0
+            draws = 0
+            opponents = []  # List of opponents this player has faced
+            
+            # Get matches as player 1
+            p1_matches = db.execute(
+                'SELECT m.player2_id, m.player1_wins, m.player2_wins, m.draws, m.status '
+                'FROM match m '
+                'WHERE m.tournament_id = ? AND m.player1_id = ? AND m.status = "completed"',
+                (id, p['id'])
+            ).fetchall()
+            
+            for match in p1_matches:
+                opponents.append(match['player2_id'])
+                if match['player1_wins'] > match['player2_wins']:
+                    points += 3
+                    wins += 1
+                elif match['player1_wins'] < match['player2_wins']:
+                    losses += 1
+                else:
+                    points += 1
+                    draws += 1
+            
+            # Get matches as player 2
+            p2_matches = db.execute(
+                'SELECT m.player1_id, m.player1_wins, m.player2_wins, m.draws, m.status '
+                'FROM match m '
+                'WHERE m.tournament_id = ? AND m.player2_id = ? AND m.status = "completed"',
+                (id, p['id'])
+            ).fetchall()
+            
+            for match in p2_matches:
+                opponents.append(match['player1_id'])
+                if match['player2_wins'] > match['player1_wins']:
+                    points += 3
+                    wins += 1
+                elif match['player2_wins'] < match['player1_wins']:
+                    losses += 1
+                else:
+                    points += 1
+                    draws += 1
+            
+            # Add player to standings
+            standings.append({
+                'id': p['id'],
+                'user_id': p['user_id'],
+                'username': p['username'],
+                'points': points,
+                'wins': wins,
+                'losses': losses, 
+                'draws': draws,
+                'opponents': opponents
+            })
+        
+        # Sort standings by points (descending)
+        standings.sort(key=lambda x: x['points'], reverse=True)
+        
+        # Create pairings based on standings
+        # Players with similar records play each other
+        paired_players = set()
+        
+        # Try to pair players with similar points who haven't played each other
+        for i in range(len(standings)):
+            if standings[i]['id'] in paired_players:
+                continue
+                
+            player1_id = standings[i]['id']
+            paired_players.add(player1_id)
+            
+            # Find the highest-ranked player who hasn't played this player
+            player2_id = None
+            for j in range(i + 1, len(standings)):
+                candidate_id = standings[j]['id']
+                if candidate_id not in paired_players and candidate_id not in standings[i]['opponents']:
+                    player2_id = candidate_id
+                    paired_players.add(player2_id)
+                    break
+            
+            # If no eligible opponent found, pair with next available player
+            if player2_id is None:
+                for j in range(i + 1, len(standings)):
+                    candidate_id = standings[j]['id']
+                    if candidate_id not in paired_players:
+                        player2_id = candidate_id
+                        paired_players.add(player2_id)
+                        break
+            
+            # Insert the match if we found a pairing
+            if player2_id is not None:
+                db.execute(
+                    'INSERT INTO match (tournament_id, round, player1_id, player2_id, status) '
+                    'VALUES (?, ?, ?, ?, ?)',
+                    (id, next_round, player1_id, player2_id, 'in_progress')
+                )
+            else:
+                # This should not happen with even number of players
+                flash(f'Warning: Could not find an opponent for player {standings[i]["username"]}')
     
     db.commit()
-    flash(f'Pairings for round {next_round} generated successfully.')
+    flash(f'Pairings for round {next_round} generated successfully using Swiss pairing system.')
     return redirect(url_for('tournament.pairings', id=id))
 
 @bp.route('/match/<int:match_id>/report', methods=('GET', 'POST'))
@@ -361,40 +621,3 @@ def report_result(match_id):
                           player1=player1,
                           player2=player2)
 
-def get_tournament(id, check_organizer=False):
-    """Get a tournament by ID.
-    
-    Parameters
-    ----------
-    id : int
-        The tournament ID
-    check_organizer : bool
-        If True, verify that the current user is the tournament organizer
-        
-    Returns
-    -------
-    dict
-        The tournament data
-        
-    Raises
-    ------
-    404
-        If the tournament doesn't exist
-    403
-        If check_organizer is True and the current user is not the organizer
-    """
-    tournament = get_db_connection('users').execute(
-        'SELECT t.id, t.name, t.description, t.format, t.date, '
-        't.max_players, t.status, t.organizer_id, u.username as organizer_name '
-        'FROM tournament t JOIN user u ON t.organizer_id = u.id '
-        'WHERE t.id = ?',
-        (id,)
-    ).fetchone()
-    
-    if tournament is None:
-        abort(404, f"Tournament id {id} doesn't exist.")
-        
-    if check_organizer and (g.user is None or g.user['id'] != tournament['organizer_id']):
-        abort(403)
-        
-    return tournament
